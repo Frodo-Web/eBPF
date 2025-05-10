@@ -148,19 +148,31 @@ node_memory_WritebackTmp_bytes 0
 node_memory_Writeback_bytes 0
 ```
 ## Active Memory Metrics:
-node_memory_Active_anon_bytes:
+### node_memory_Active_anon_bytes:
 
 Amount of anonymous memory (not file-backed) in active use.
 
 3.166208e+06 bytes (~3.17 MB) in this case.
 
-node_memory_Active_bytes:
+```
+AnonPages %lu (since Linux 2.6.18)
+       Non-file backed pages mapped into user-space page tables.
+
+The way a process maps memory in Linux is usually using the mmap(2) system call which "maps files or devices into memory". The memory can be backed by an actual file in the disk, so you could handle a file as if it was a regular memory block.
+
+However, you could also allocate empty memory section not backed by any file. Those memory pages are called "Anonymous". From the man page of mmap:
+
+MAP_ANONYMOUS
+       The mapping is not backed by any file; its contents are initialized to zero.
+```
+
+### node_memory_Active_bytes:
 
 Total active memory (both file-backed and anonymous) currently in use.
 
 4.43011072e+08 bytes (~443 MB) here.
 
-node_memory_Active_file_bytes:
+### node_memory_Active_file_bytes:
 
 Amount of file-backed (cache, mmapped files) memory in active use.
 
