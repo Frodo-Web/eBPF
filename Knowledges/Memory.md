@@ -992,3 +992,187 @@ Tuning:
 vfs_cache_pressure (in /proc/sys/vm/) adjusts reclaim priority for file-backed pages.
 
 High inactive memory is normal (Linux aggressively caches files).
+
+## node_memory_KernelStack_bytes
+Definition: Memory used by kernel stacks for each thread/process.
+
+Value: 2.932736e+06 (~2.93 MB).
+
+How it Works:
+
+Every thread in the system gets a small kernel stack (usually 8–16 KB).
+
+Used for system calls, interrupts, and kernel-mode execution.
+
+Why it Matters:
+
+High values indicate many threads (e.g., containers, Java apps).
+
+Kernel stacks are non-swappable, so they consume physical RAM.
+
+## node_memory_Mapped_bytes
+Definition: Memory mapped into user-space processes (e.g., mmap'd files, shared libraries).
+
+Value: 2.20553216e+08 (~220.5 MB).
+
+How it Works:
+
+Includes files mapped into memory (/proc/<pid>/maps).
+
+Shared between processes (e.g., libc.so).
+
+Why it Matters:
+
+High values suggest heavy file I/O or shared memory usage (e.g., databases).
+
+## node_memory_MemAvailable_bytes
+Definition: Estimate of memory available for new workloads (without swapping).
+
+Value: 1.5770914816e+10 (~15.77 GB).
+
+How it Works:
+
+Calculated as:
+
+MemFree + (Cached + Buffers) + (SReclaimable) - (Unreclaimable slabs)  
+More accurate than MemFree (includes reclaimable caches).
+
+Why it Matters:
+
+Key metric for real memory pressure.
+
+If low, the system may start swapping or killing processes (OOM).
+
+## node_memory_MemFree_bytes
+Definition: Raw free memory (unused RAM).
+
+Value: 1.4826561536e+10 (~14.83 GB).
+
+How it Works:
+
+Does not account for caches/buffers that can be reclaimed.
+
+Why it Matters:
+
+Less useful than MemAvailable (Linux aggressively uses free RAM for caching).
+
+## node_memory_Mlocked_bytes
+Definition: Memory locked by processes (cannot be swapped/paged out).
+
+Value: 0 (no locked memory).
+
+How it Works:
+
+Used by mlock()/mlockall() syscalls (e.g., databases, real-time apps).
+
+Why it Matters:
+
+Excessive locking can starve the system of free memory.
+
+## node_memory_NFS_Unstable_bytes
+Definition: Memory holding NFS writes not yet committed to disk.
+
+Value: 0 (no NFS instability).
+
+How it Works:
+
+NFS client caches writes temporarily (similar to Dirty_bytes but for NFS).
+
+Why it Matters:
+
+Non-zero values indicate pending NFS writes (risk of data loss on crash).
+
+## node_memory_PageTables_bytes
+Definition: Memory used for page tables (virtual-to-physical address mappings).
+
+Value: 4.087808e+06 (~4.1 MB).
+
+How it Works:
+
+Each process has its own page tables (managed by the kernel).
+
+Grows with the number of memory mappings.
+
+Why it Matters:
+
+High values occur with many processes or large address spaces (e.g., VMs).
+
+## node_memory_Percpu_bytes
+Definition: Memory used for per-CPU kernel data structures.
+
+Value: 2.162688e+06 (~2.16 MB).
+
+How it Works:
+
+Kernel allocates per-CPU copies of data to avoid locking (e.g., network stats).
+
+Why it Matters:
+
+Scales with CPU cores (usually negligible unless extreme).
+
+## node_memory_SReclaimable_bytes
+Definition: Reclaimable slab memory (kernel object caches that can be freed).
+
+Value: 5.834752e+07 (~58.3 MB).
+
+How it Works:
+
+Slabs cache kernel objects (e.g., inode_cache, dentry).
+
+SReclaimable can be freed under memory pressure.
+
+Why it Matters:
+
+Part of MemAvailable—high values mean more reclaimable memory.
+
+## node_memory_SUnreclaim_bytes
+Definition: Unreclaimable slab memory (kernel objects pinned in RAM).
+
+Value: 6.4274432e+07 (~64.3 MB).
+
+How it Works:
+
+Includes critical kernel structures (e.g., vm_area_struct).
+
+Why it Matters:
+
+High values may indicate kernel memory leaks (check slabtop).
+
+## node_memory_ShmemHugePages_bytes
+Definition: Shared memory allocated in HugePages.
+
+Value: 0 (no shared HugePages).
+
+How it Works:
+
+Used for shared memory (e.g., tmpfs, IPC) with HugePages enabled.
+
+Why it Matters:
+
+HugePages improve performance for shared memory workloads.
+
+## node_memory_ShmemPmdMapped_bytes
+Definition: Shared memory mapped with PMD (Page Middle Directory) huge pages.
+
+Value: 0 (no PMD-mapped shared memory).
+
+How it Works:
+
+PMD entries map 2MB huge pages (faster TLB lookups).
+
+Why it Matters:
+
+Non-zero values indicate optimized shared memory access.
+
+## node_memory_Shmem_bytes
+Definition: Total shared memory (e.g., tmpfs, shared IPC segments).
+
+Value: 1.0391552e+07 (~10.4 MB).
+
+How it Works:
+
+Includes /dev/shm, tmpfs mounts, and shmget() allocations.
+
+Why it Matters:
+
+High usage can exhaust memory (shared memory is not swappable).
