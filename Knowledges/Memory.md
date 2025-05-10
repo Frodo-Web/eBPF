@@ -1493,6 +1493,16 @@ cat /proc/vmallocinfo | awk '{print $3}' | sort | uniq -c | sort -nr
 | **kmalloc**       | Kernel Function    | Kernel | Physically contiguous  | Typically ≤4MB | No          | Yes            | - Uses slab allocator<br>- GFP flags control behavior (`GFP_KERNEL`, `GFP_ATOMIC`)<br>- Fast for small allocs | - DMA buffers<br>- Small kernel data structures<br>- Device driver allocations |
 | **calloc**        | Library (libc)     | User   | Virtual                | Heap-dependent  | Yes (zero)  | Yes            | - Wrapper around `malloc`+`memset`<br>- Prevents data leakage<br>- Slightly slower than `malloc` | Initialized arrays/structures |
 | **realloc**       | Library (libc)     | User   | Virtual                | Heap-dependent  | Partial     | Yes            | - May move memory blocks<br>- Combines `malloc`+`memcpy`+`free`<br>- Null ptr acts like `malloc` | Resizing existing allocations |
+
+| Allocation Method | Type               | Space  | Contiguity Requirement | Max Size       | Initialized | Thread Safety | Key Characteristics                                                                 | Typical Use Cases                          | vmalloc-Specific Examples |
+|-------------------|--------------------|--------|------------------------|----------------|-------------|----------------|-------------------------------------------------------------------------------------|--------------------------------------------|--------------------------|
+| **mmap**          | System Call        | Both   | Virtual                | Up to VM limit | Optional    | Process-safe   | Manages memory at page granularity, supports shared memory                          | Shared memory IPC, memory-mapped files     | - |
+| **malloc**        | Library (libc)     | User   | Virtual                | Heap-dependent | No          | Yes            | Uses `brk`/`sbrk` or `mmap` for large allocs                                       | General-purpose allocations                | - |
+| **vmalloc**       | Kernel Function    | Kernel | Virtual only           | ~32TB (x86_64)| No          | Yes            | Physically non-contiguous pages, higher TLB overhead                                | **1. Kernel module loading**<br>**2. Large kernel buffers**<br>**3. Dynamic probe buffers**<br>**4. BPF JIT-compiled programs**<br>**5. Temporary execmem allocations** | **1.** `insmod my_module.ko`<br>**2.** Network packet buffers >4MB<br>**3.** Kprobes/Perf event buffers<br>**4.** eBPF program compilation<br>**5.** Executable memory for JITs |
+| **kmalloc**       | Kernel Function    | Kernel | Physically contiguous  | ≤4MB           | No          | Yes            | Uses slab allocator, GFP flags control behavior                                    | DMA buffers, small kernel structures       | - |
+| **calloc**        | Library (libc)     | User   | Virtual                | Heap-dependent | Yes (zero)  | Yes            | Wrapper around `malloc`+`memset`                                                   | Initialized arrays/structures              | - |
+| **realloc**       | Library (libc)     | User   | Virtual                | Heap-dependent | Partial     | Yes            | May move memory blocks                                                             | Resizing existing allocations              | - |
+
 ### Use cases
 | Scenario                          | Best Choice       | Why                                                                 |
 |-----------------------------------|-------------------|---------------------------------------------------------------------|
@@ -1501,6 +1511,24 @@ cat /proc/vmallocinfo | awk '{print $3}' | sort | uniq -c | sort -nr
 | Kernel driver needing DMA buffer  | `kmalloc(GFP_DMA)`| Guarantees physical contiguity for hardware                        |
 | Resizing array in userspace       | `realloc`         | Handles copy/move logic automatically                              |
 | Secure allocation (zeroed memory) | `calloc`          | Prevents data leakage from freed memory                            |
+### vmalloc use cases
+```
+/* Example 1: Allocating memory for kernel module */
+void *module_mem = vmalloc(2 * 1024 * 1024);  // 2MB for module data
+
+/* Example 2: Network driver large buffer */
+char *packet_buffer = vmalloc(MAX_PACKET_SIZE * 1000);  // Non-contiguous 10MB buffer
+
+/* Example 3: Dynamic tracing buffer (Kprobes) */
+static char *kprobe_buffer;
+kprobe_buffer = vmalloc(PAGE_SIZE * 64);  // 256KB for probe data
+
+/* Example 4: BPF JIT memory (before 5.7 kernel) */
+void *bpf_mem = vmalloc_exec(PAGE_SIZE);  // Executable memory for JIT
+
+/* Example 5: Temporary mapping for hardware */
+void *hw_mem = vmap(pages, num_pages, VM_MAP, PAGE_KERNEL);  // Map scattered pages
+```
 ##  Writeback Metrics (Writeback_bytes, WritebackTmp_bytes = 0)
 What they track:
 
