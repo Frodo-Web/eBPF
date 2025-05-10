@@ -7,7 +7,7 @@ Three main allocators in Linux history:
 - SLAB (original, now mostly deprecated)
 - SLUB (default in modern kernels, simpler and more scalable)
 - SLOB (for embedded systems with very low memory)
-### /proc/slabinfo
+### /proc/slabinfo, slabtop
 ```
 cat /proc/slabinfo
 slabinfo - version: 2.1
@@ -497,6 +497,66 @@ node_memory_WritebackTmp_bytes 0
 # HELP node_memory_Writeback_bytes Memory information field Writeback_bytes.
 # TYPE node_memory_Writeback_bytes gauge
 node_memory_Writeback_bytes 0
+```
+## cat /proc/meminfo 
+```
+MemTotal:       15983572 kB
+MemFree:        14337532 kB
+MemAvailable:   15262848 kB
+Buffers:           39552 kB
+Cached:          1118480 kB
+SwapCached:            0 kB
+Active:           457564 kB
+Inactive:         836996 kB
+Active(anon):       3096 kB
+Inactive(anon):   143576 kB
+Active(file):     454468 kB
+Inactive(file):   693420 kB
+Unevictable:         136 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Zswap:                 0 kB
+Zswapped:              0 kB
+Dirty:                 0 kB
+Writeback:             0 kB
+AnonPages:        136664 kB
+Mapped:           215468 kB
+Shmem:             10148 kB
+KReclaimable:      57076 kB
+Slab:             119836 kB
+SReclaimable:      57076 kB
+SUnreclaim:        62760 kB
+KernelStack:        2896 kB
+PageTables:         4044 kB
+SecPageTables:      2056 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     7926248 kB
+Committed_AS:     553848 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:       26660 kB
+VmallocChunk:          0 kB
+Percpu:             2112 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:     63488 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+Unaccepted:            0 kB
+HugePages_Total:      64
+HugePages_Free:       64
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:          131072 kB
+DirectMap4k:      141488 kB
+DirectMap2M:     6019072 kB
+DirectMap1G:    11534336 kB
 ```
 ## Active Memory Metrics:
 ### node_memory_Active_anon_bytes:
