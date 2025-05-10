@@ -922,3 +922,73 @@ Example (reduce risk of stalls):
 echo 10 > /proc/sys/vm/dirty_background_ratio
 echo 20 > /proc/sys/vm/dirty_ratio
 ```
+
+## node_memory_HardwareCorrupted_bytes
+Definition: Memory corrupted due to hardware failures (ECC errors, bad RAM).
+
+Value: 0 (no corruption detected).
+
+How it Works:
+
+The kernel marks faulty memory regions as "corrupted" and avoids using them.
+
+Non-zero values indicate failing RAM (check kernel logs: dmesg | grep -i error).
+
+Action Required: Replace faulty RAM if this value increases.
+
+## HugePages Metrics (HugePages_Free, HugePages_Rsvd, HugePages_Surp, HugePages_Total)
+Purpose: Track usage of HugePages (large memory pages to reduce TLB misses).
+
+Values: All 0 (HugePages not configured/enabled).
+
+How it Works:
+
+HugePages_Total: Total allocated HugePages (configured via /proc/sys/vm/nr_hugepages).
+
+HugePages_Free: Unused HugePages.
+
+HugePages_Rsvd: Reserved but not yet allocated (e.g., by libhugetlbfs).
+
+HugePages_Surp: Surplus HugePages beyond the initial allocation.
+
+Tuning:
+
+Critical for databases (Oracle, PostgreSQL) to reduce page table overhead.
+
+Configure via sysctl or /proc/sys/vm/.
+
+## node_memory_Hugepagesize_bytes
+Definition: Size of a single HugePage (default: 2MB or 1GB depending on CPU).
+
+Value: 2.097152e+06 (2 MB).
+
+Note: Larger sizes (1GB) require CPU support (e.g., Intel x86_64 with pdpe1gb flag).
+
+## Inactive Memory Metrics (Inactive_anon_bytes, Inactive_bytes, Inactive_file_bytes)
+Purpose: Track memory not recently used (candidates for eviction by the kernel).
+
+How it Works:
+
+The kernel divides memory into active (frequently used) and inactive (rarely used).
+
+### Inactive_anon_bytes: Anonymous (non-file-backed) pages (e.g., heap, stack).
+
+Value: 1.4729216e+08 (~147 MB).
+
+High values suggest unused application memory (may be swapped out).
+
+### Inactive_file_bytes: File-backed pages (e.g., cached files).
+
+Value: 7.32471296e+08 (~732 MB).
+
+Can be safely reclaimed if needed (reloaded from disk later).
+
+### Inactive_bytes: Total inactive memory (Inactive_anon + Inactive_file).
+
+Value: 8.79763456e+08 (~879 MB).
+
+Tuning:
+
+vfs_cache_pressure (in /proc/sys/vm/) adjusts reclaim priority for file-backed pages.
+
+High inactive memory is normal (Linux aggressively caches files).
