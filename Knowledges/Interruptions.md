@@ -63,6 +63,92 @@ Misconfigured IRQ affinity (CPU core overloaded with interrupts).
 | **NPI**      | 0       | 0      | 0      | 0        | Nested posted-interrupt event        |
 | **PIW**      | 0       | 0      | 0      | 0        | Posted-interrupt wakeup event        |
 
+1. NMI (Non-Maskable Interrupts)
+What it is: Highest-priority interrupts that cannot be ignored by the CPU (even if interrupts are disabled).
+
+Causes:
+
+Hardware failures (e.g., memory corruption, power issues).
+
+Kernel panics or watchdog timeouts.
+
+Your data: Low counts (2|1|1|3) are normal (likely watchdog timers).
+
+2. LOC (Local Timer Interrupts)
+What it is: Interrupts from the CPU’s local APIC timer, used for task scheduling and timekeeping.
+
+Why high?: Scales with uptime and CPU usage. Your values (240K–493K) are normal for a running system.
+
+3. SPU (Spurious Interrupts)
+What it is: "Ghost" interrupts triggered by electrical noise or hardware glitches.
+
+Your data: 0 is ideal (no hardware issues).
+
+4. PMI (Performance Monitoring Interrupts)
+What it is: Triggered by CPU performance counters (e.g., cache misses, branch mispredictions).
+
+Your data: Low counts (2|1|1|3) suggest minor profiling (e.g., perf or kernel optimizations).
+
+5. IWI (IRQ Work Interrupts)
+What it is: Deferred work from hardware IRQs (e.g., re-enabling devices after interrupts).
+
+Your data: 18|16|0|0 suggests CPU0/1 handled recent IRQ cleanup tasks.
+
+6. RTR (APIC ICR Read Retries)
+What it is: Retries when the CPU reads the APIC Interrupt Command Register (ICR).
+
+Your data: 0 means no APIC communication issues.
+
+7. RES (Rescheduling Interrupts)
+What it is: Requests to switch tasks (triggered by scheduler or sched_yield()).
+
+Your data: 1221|1150|966|1400 indicates moderate context switching (normal for multitasking).
+
+8. CAL (Function Call Interrupts)
+What it is: Interrupts for kernel function calls (e.g., system calls).
+
+Your data: High counts (18K–24K) are normal for active processes.
+
+9. TLB (TLB Shootdowns)
+What it is: Synchronizes Translation Lookaside Buffers (TLBs) across CPUs when memory mappings change.
+
+Your data: 886|975|1084|934 suggests moderate memory pressure (e.g., process startups/exits).
+
+10. TRM (Thermal Event Interrupts)
+What it is: Triggered when CPU temperature exceeds thresholds.
+
+Your data: 0 means no thermal throttling.
+
+11. THR (Threshold APIC Interrupts)
+What it is: APIC-specific interrupts for power/thermal thresholds.
+
+Your data: 0 (typical unless using advanced power features).
+
+12. DFR (Deferred Error APIC Interrupts)
+What it is: Handles correctable CPU errors (e.g., ECC memory fixes).
+
+Your data: 0 (no corrected errors detected).
+
+13. MCE (Machine Check Exceptions)
+What it is: Fatal hardware errors (e.g., CPU cache corruption).
+
+Your data: 0 is good (no critical failures).
+
+14. MCP (Machine Check Polls)
+What it is: Kernel checks for pending MCEs.
+
+Your data: 35|36|36|36 (normal background checks).
+
+15. ERR/MIS (Errors/Miscellaneous)
+What it is: Catch-all for unclassified interrupts/errors.
+
+Your data: 0 (no anomalies).
+
+16. PIN/NPI/PIW (Posted Interrupts)
+What it is: Virtualization-related interrupts for CPU wakeups/notifications.
+
+Your data: 0 (no active VM workloads).
+
 ## SOFTIRQ:
 
 Deferred interrupt processing – Used to handle less urgent tasks after hardware interrupts.
