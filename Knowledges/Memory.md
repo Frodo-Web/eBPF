@@ -1,8 +1,7 @@
 ## SLAB allocator
 SLAB allocator:
-Purpose: Optimizes memory allocation for small, frequently used kernel objects (e.g., process descriptors, network sockets, filesystem metadata).
-
-Replaces traditional malloc() in kernel space to reduce fragmentation and improve performance.
+- Purpose: Optimizes memory allocation for small, frequently used kernel objects (e.g., process descriptors, network sockets, filesystem metadata).
+- Replaces traditional malloc() in kernel space to reduce fragmentation and improve performance.
 
 Three main allocators in Linux history:
 - SLAB (original, now mostly deprecated)
