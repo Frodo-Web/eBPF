@@ -994,6 +994,22 @@ vfs_cache_pressure (in /proc/sys/vm/) adjusts reclaim priority for file-backed p
 High inactive memory is normal (Linux aggressively caches files).
 
 ## node_memory_KernelStack_bytes
+
+```
+User-space stack (handles function calls in user mode).
+
+Kernel-space stack (used when the thread executes in kernel mode, e.g., during system calls, interrupts, or exceptions).
+
+When a thread makes a system call (e.g., read(), write()), the CPU switches to kernel mode and starts using the kernel stack for:
+
+- Function calls inside the kernel.
+
+- Storing register states.
+
+- Passing arguments between kernel functions.
+
+- Interrupts (e.g., hardware events) also use the kernel stack of the interrupted thread.
+```
 Definition: Memory used by kernel stacks for each thread/process.
 
 Value: 2.932736e+06 (~2.93 MB).
@@ -1011,6 +1027,23 @@ High values indicate many threads (e.g., containers, Java apps).
 Kernel stacks are non-swappable, so they consume physical RAM.
 
 ## node_memory_Mapped_bytes
+
+```
+cat /proc/2939/maps
+555f59e6a000-555f59e6f000 r--p 00000000 08:03 11692462                   /usr/bin/sudo
+555f59e6f000-555f59e8c000 r-xp 00005000 08:03 11692462                   /usr/bin/sudo
+555f59e8c000-555f59e95000 r--p 00022000 08:03 11692462                   /usr/bin/sudo
+555f59e95000-555f59e96000 r--p 0002a000 08:03 11692462                   /usr/bin/sudo
+555f59e96000-555f59e98000 rw-p 0002b000 08:03 11692462                   /usr/bin/sudo
+555f59e98000-555f59e99000 rw-p 00000000 00:00 0
+555f99657000-555f996ea000 rw-p 00000000 00:00 0                          [heap]
+7f74d0c8c000-7f74d0c96000 r--p 00000000 08:03 11666576                   /usr/lib64/security/pam_systemd.so
+7f74d0c96000-7f74d0ce6000 r-xp 0000a000 08:03 11666576                   /usr/lib64/security/pam_systemd.so
+7f74d0ce6000-7f74d0d01000 r--p 0005a000 08:03 11666576                   /usr/lib64/security/pam_systemd.so
+7f74d0d01000-7f74d0d07000 r--p 00074000 08:03 11666576                   /usr/lib64/security/pam_systemd.so
+7f74d0d07000-7f74d0d08000 rw-p 0007a000 08:03 11666576                   /usr/lib64/security/pam_systemd.so
+```
+
 Definition: Memory mapped into user-space processes (e.g., mmap'd files, shared libraries).
 
 Value: 2.20553216e+08 (~220.5 MB).
@@ -1083,6 +1116,14 @@ Why it Matters:
 Non-zero values indicate pending NFS writes (risk of data loss on crash).
 
 ## node_memory_PageTables_bytes
+```
+Why Do Page Tables Consume Memory?
+Each Virtual Page Needs an Entry:
+
+A 4KB page on x86_64 requires an 8-byte PTE.
+
+Example: 1GB of memory = ~262k PTEs = ~2MB of page tables.
+```
 Definition: Memory used for page tables (virtual-to-physical address mappings).
 
 Value: 4.087808e+06 (~4.1 MB).
@@ -1098,6 +1139,29 @@ Why it Matters:
 High values occur with many processes or large address spaces (e.g., VMs).
 
 ## node_memory_Percpu_bytes
+```
+What Are Per-CPU Variables?
+Definition: Kernel data structures duplicated for each CPU core to avoid synchronization bottlenecks.
+
+Purpose: Eliminate locks when multiple CPUs access the same data.
+
+Examples:
+
+Network packet counters (netstat stats).
+
+Scheduler runqueues.
+
+Memory allocator caches (e.g., kmem_cache).
+
+Problem: Lock Contention
+In a multi-core system, if multiple CPUs modify shared data (e.g., a global counter), they must use locks (e.g., spinlocks).
+Locks cause cache-line bouncing (CPUs fighting for access) → poor scalability.
+
+Solution: Per-CPU Copies
+Each CPU gets its own private copy of the data.
+No locks needed for CPU-local operations.
+Tradeoff: Slightly higher memory usage (~MBs per core).
+```
 Definition: Memory used for per-CPU kernel data structures.
 
 Value: 2.162688e+06 (~2.16 MB).
@@ -1152,6 +1216,31 @@ Why it Matters:
 HugePages improve performance for shared memory workloads.
 
 ## node_memory_ShmemPmdMapped_bytes
+```
+How PMD-Mapped Shared Memory Works
+A) Standard Shared Memory (4KB Pages)
+Each 4KB page requires a PTE (Page Table Entry).
+
+TLB pressure: More entries → More TLB misses → Slower memory access.
+
+B) PMD-Mapped Shared Memory (2MB Huge Pages)
+Single PMD entry maps a 2MB huge page (instead of 512x 4KB PTEs).
+
+Benefits:
+
+Fewer TLB misses (1 entry covers 2MB).
+
+Faster page walks (fewer levels traversed).
+
+Better cache locality.
+
+C) When is PMD Mapping Used?
+HugePages are enabled (CONFIG_TRANSPARENT_HUGEPAGE=y).
+
+Shared memory is aligned to 2MB (kernel tries to merge 4KB pages into 2MB).
+
+mmap() or shmget() requests large enough regions (typically > 2MB).
+```
 Definition: Shared memory mapped with PMD (Page Middle Directory) huge pages.
 
 Value: 0 (no PMD-mapped shared memory).
