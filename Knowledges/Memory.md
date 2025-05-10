@@ -1521,6 +1521,43 @@ void *bpf_mem = vmalloc_exec(PAGE_SIZE);  // Executable memory for JIT
 void *hw_mem = vmap(pages, num_pages, VM_MAP, PAGE_KERNEL);  // Map scattered pages
 ```
 ##  Writeback Metrics (Writeback_bytes, WritebackTmp_bytes = 0)
+```
+How Writeback Works
+The kernel handles writeback through a multi-stage pipeline:
+
+Page Marking as Dirty
+
+When a process modifies a file-backed page (e.g., via write()), the kernel marks it as dirty in the page cache.
+
+Dirty pages are tracked in the radix_tree of the address_space object.
+
+Writeback Triggering
+Writeback starts when:
+
+Thresholds are crossed:
+
+bash
+# Check current thresholds
+cat /proc/sys/vm/dirty_background_ratio  # Default: 10% of RAM
+cat /proc/sys/vm/dirty_ratio             # Default: 20% of RAM
+Timers expire:
+
+bash
+cat /proc/sys/vm/dirty_expire_centisecs   # Default: 3000 (30 seconds)
+Explicit sync: sync(), fsync(), or fdatasync() syscalls.
+
+Flush to Disk
+
+The flusher threads (kworker threads labeled as flush-*) copy dirty pages to disk.
+
+Filesystems may use temporary buffers (WritebackTmp_bytes) for transactional safety (e.g., ext4 journaling).
+
+Completion
+
+Once written, pages are marked clean and removed from writeback queues.
+
+Storage interrupts confirm completion.
+```
 What they track:
 
 Writeback: Data being written from RAM to disk
