@@ -1,0 +1,75 @@
+   10  hostnamectl set-hostname zeus
+   12  dnf search python
+   13  dnf install python3.12
+   18  dnf install epel-release
+   19  dnf search lxc
+   20  dnf install lxc lxc-templates
+   22  dnf install vim
+   24  dnf install fdisk
+   47  mount -o defaults,noatime,nodiratime /dev/sdb1 /opt/Patriot/
+   50  cat /proc/swaps
+   51  vim /etc/fstab
+   52  mount -a
+   53  systemctl daemon-reload
+   63  dnf install tmux
+   70  ls /var/lib/lxc/
+   71  dnf search lvm
+   76  dnf install lvm2
+   79  systemctl status lvm2-monitor
+   80  systemctl status lvm2-lvmpolld
+   81  fdisk /dev/sdb
+   84  pvcreate /dev/sdb1
+   87  vgcreate lxc-vg /dev/sdb1
+   89  lvcreate -n lxc -l 100%FREE lxc-vg
+   90  ls /dev/mapper/lxc--vg-lxc
+   91  mke2fs -t ext4 -O ^has_journal /dev/mapper/lxc--vg-lxc
+   92  blkid /dev/mapper/lxc--vg-lxc
+   93  vim /etc/fstab
+  117  /usr/share/lxc/templates/lxc-download -l
+  118  dnf install tar
+  121  systemctl enable lxc
+  122  systemctl start lxc
+  141  lxc-create -n minecraft -t download
+  142  lxc-ls -f
+  144  lxc-start -n minecraft
+  149  lxc-start -l debug -o /tmp/1.log -n minecraft
+  150  vim /tmp/1.log
+  153  journalctl -u lxc-net.service -n 30
+  154  dnf install dnsmasq
+  155  systemctl status lxc-net.service
+  156  systemctl start lxc-net.service
+  157  systemctl status lxc-net.service
+  160  lxc-start -n minecraft
+  174  vim /etc/selinux/config
+  175  reboot
+  177  getenforce
+  179  grubby --args="user_namespace.enable=1" --update-kernel="$(grubby --default-kernel)"
+  180  grubby --args="namespace.unpriv_enable=1" --update-kernel="$(grubby --default-kernel)"
+  181  echo "user.max_user_namespaces=3883" | sudo tee -a /etc/sysctl.d/99-userns.conf
+  182  reboot
+  195  lxc-create -n minecraft -t download
+  199  lxc-attach -n minecraft
+  204  echo overlay >> /etc/modules-load.d/docker.conf
+  207  echo br_netfilter >> /etc/modules-load.d/docker.conf
+  208  lsmod | grep overlay
+  209  lsmod | grep net
+  210  modprobe br_netfilter
+  212  modprobe docker
+  214  dnf  install ca-certificates curl
+  215  sudo dnf -y install dnf-plugins-core
+  216   sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+  217  sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  220  systemctl disable docker
+  221  systemctl stop docker
+  223  reboot
+  226  dnf install lm_sensors
+  227  sensors-detect
+  228  sensors
+  229  dnf install hddtemp
+  230  hddtemp
+  233  sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+  234  sudo dnf install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
+  235  yum list available --disablerepo='*' --enablerepo=elrepo-kernel
+  236  sudo dnf --enablerepo=elrepo-kernel install kernel-ml
+  239  reboot
+  247  uname -a
