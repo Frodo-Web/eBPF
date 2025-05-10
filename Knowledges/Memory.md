@@ -1484,6 +1484,23 @@ cat /proc/vmallocinfo | awk '{print $3}' | sort | uniq -c | sort -nr
       1 __pci_enable_msix_range+0x289/0x530
       1 __devm_ioremap+0xa4/0xc0
 ```
+## mmap vs malloc vs vmalloc vs kmalloc vs calloc vs realloc
+| Allocation Method | Type               | Space  | Contiguity Requirement | Max Size       | Initialized | Thread Safety | Key Characteristics                                                                 | Typical Use Cases                          |
+|-------------------|--------------------|--------|------------------------|----------------|-------------|----------------|-------------------------------------------------------------------------------------|--------------------------------------------|
+| **mmap**          | System Call        | Both   | Virtual                | Up to virtual memory limit | Optional (`MAP_ANONYMOUS`) | Process-safe | - Manages memory at page granularity<br>- Bypasses libc heap<br>- Supports shared memory (`MAP_SHARED`) | - Shared memory IPC<br>- Memory-mapped files<br>- Large allocations |
+| **malloc**        | Library (libc)     | User   | Virtual                | Heap-dependent  | No          | Yes (modern)   | - Uses `brk`/`sbrk` for small allocs<br>- Falls back to `mmap` for large allocs<br>- May fragment heap | General-purpose user-space allocations |
+| **vmalloc**       | Kernel Function    | Kernel | Virtual only           | ~32TB (x86_64) | No          | Yes            | - Physically non-contiguous pages<br>- Higher TLB overhead<br>- Slower than `kmalloc` | - Kernel module loading<br>- Large kernel buffers<br>- `ioremap` scenarios |
+| **kmalloc**       | Kernel Function    | Kernel | Physically contiguous  | Typically ≤4MB | No          | Yes            | - Uses slab allocator<br>- GFP flags control behavior (`GFP_KERNEL`, `GFP_ATOMIC`)<br>- Fast for small allocs | - DMA buffers<br>- Small kernel data structures<br>- Device driver allocations |
+| **calloc**        | Library (libc)     | User   | Virtual                | Heap-dependent  | Yes (zero)  | Yes            | - Wrapper around `malloc`+`memset`<br>- Prevents data leakage<br>- Slightly slower than `malloc` | Initialized arrays/structures |
+| **realloc**       | Library (libc)     | User   | Virtual                | Heap-dependent  | Partial     | Yes            | - May move memory blocks<br>- Combines `malloc`+`memcpy`+`free`<br>- Null ptr acts like `malloc` | Resizing existing allocations |
+### Use cases
+| Scenario                          | Best Choice       | Why                                                                 |
+|-----------------------------------|-------------------|---------------------------------------------------------------------|
+| Allocating 1KB buffer in userspace| `malloc`          | Fast, heap-optimized for small allocs                              |
+| 100MB shared memory between procs | `mmap(MAP_SHARED)`| Avoids copy, enables IPC                                           |
+| Kernel driver needing DMA buffer  | `kmalloc(GFP_DMA)`| Guarantees physical contiguity for hardware                        |
+| Resizing array in userspace       | `realloc`         | Handles copy/move logic automatically                              |
+| Secure allocation (zeroed memory) | `calloc`          | Prevents data leakage from freed memory                            |
 ##  Writeback Metrics (Writeback_bytes, WritebackTmp_bytes = 0)
 What they track:
 
