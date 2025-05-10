@@ -22,13 +22,6 @@ Faulty hardware (spurious interrupts).
 
 Misconfigured IRQ affinity (CPU core overloaded with interrupts).
 
-## SOFTIRQ:
-
-Deferred interrupt processing – Used to handle less urgent tasks after hardware interrupts.
-
-Lower priority than irq – Runs after hardware interrupts or during kernel scheduling.
-
-Can be interrupted by irq but not by normal processes.
 
 ### /proc/interrupts
 
@@ -50,6 +43,14 @@ Can be interrupted by irq but not by normal processes.
 | **LOC** | 240354 | 244152 | 214633 | 493950   | Local timer interrupts      |
 | **RES** | 1221   | 1150   | 966    | 1400     | Rescheduling interrupts     |
 | **CAL** | 22959  | 18812  | 24699  | 13982    | Function call interrupts    |
+
+## SOFTIRQ:
+
+Deferred interrupt processing – Used to handle less urgent tasks after hardware interrupts.
+
+Lower priority than irq – Runs after hardware interrupts or during kernel scheduling.
+
+Can be interrupted by irq but not by normal processes.
 
 ### Examples:
 Network packet processing (NET_RX, NET_TX).
