@@ -872,3 +872,53 @@ Their use is diminishing with 64-bit systems and IOMMUs, but they remain relevan
 ### node_memory_Bounce_bytes:
 
 0 bytes (no bounce buffers in use here).
+
+## node_memory_Dirty_bytes
+
+```
+Data Consistency & Durability
+File System Integrity: If the system crashes before dirty pages are written, file data could be lost or corrupted.
+
+Applications Expect Durability: When a program writes to a file (e.g., a database transaction), it assumes the data will persist. Delayed writes must eventually sync to disk.
+
+Memory Reclamation (Not Just for Swap)
+Freeing Up RAM: Dirty pages occupy memory. If the system runs low on free RAM, the kernel must:
+
+Write dirty file-backed pages to disk (freeing up memory).
+
+Swap out anonymous pages (if enabled) to the swap file/partition.
+
+Not Just for Swap: Even if swap is disabled, file-backed dirty pages (e.g., from write() syscalls) must be flushed to their underlying storage.
+```
+
+Definition: Memory pages modified in RAM but not yet written to disk ("dirty" pages).
+
+Value: 0 (no dirty pages in this case).
+
+How it Works:
+
+When files are modified in memory, the kernel marks them as "dirty."
+
+The pdflush (or kswapd) kernel thread periodically writes dirty pages to disk.
+
+High values can indicate I/O bottlenecks (e.g., slow disks or heavy write activity).
+
+Tuning:
+
+Controlled by /proc/sys/vm/dirty_ratio (max % of memory allowed to be dirty).
+
+dirty_background_ratio triggers background writes before hitting the limit.
+
+
+dirty_background_ratio (e.g., 10%): Start background writes early.
+
+dirty_ratio (e.g., 20%): Max dirty pages before blocking writes.
+
+dirty_expire_centisecs: How long dirty pages can stay in RAM (default: 3000 = 30 sec).
+
+Example (reduce risk of stalls):
+
+```
+echo 10 > /proc/sys/vm/dirty_background_ratio
+echo 20 > /proc/sys/vm/dirty_ratio
+```
