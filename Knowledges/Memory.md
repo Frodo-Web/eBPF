@@ -858,3 +858,17 @@ Memory mapped with 2MB hugepages.
 Memory mapped with standard 4KB pages.
 
 1.44883712e+08 bytes (~144.9 MB) here.
+
+## Memory used for "bounce buffers" (temporary I/O buffers for DMA to high memory).
+```
+Bounce buffers are temporary memory buffers used when a device or system cannot directly access a particular region of memory due to hardware or software constraints. They act as intermediaries, "bouncing" data between the source and destination to facilitate proper data transfer.
+```
+
+### Performance Impact
+- Overhead: Extra copying reduces performance.
+- Avoidance: Modern 64-bit systems and IOMMUs (Input-Output Memory Management Units) help eliminate bounce buffers by remapping addresses dynamically.
+
+Their use is diminishing with 64-bit systems and IOMMUs, but they remain relevant in legacy and embedded systems.
+### node_memory_Bounce_bytes:
+
+0 bytes (no bounce buffers in use here).
