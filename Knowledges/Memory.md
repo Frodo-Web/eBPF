@@ -147,4 +147,21 @@ node_memory_WritebackTmp_bytes 0
 # TYPE node_memory_Writeback_bytes gauge
 node_memory_Writeback_bytes 0
 ```
-```
+## Active Memory Metrics:
+node_memory_Active_anon_bytes:
+
+Amount of anonymous memory (not file-backed) in active use.
+
+3.166208e+06 bytes (~3.17 MB) in this case.
+
+node_memory_Active_bytes:
+
+Total active memory (both file-backed and anonymous) currently in use.
+
+4.43011072e+08 bytes (~443 MB) here.
+
+node_memory_Active_file_bytes:
+
+Amount of file-backed (cache, mmapped files) memory in active use.
+
+4.39844864e+08 bytes (~439.8 MB) here.
