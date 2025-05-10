@@ -403,6 +403,56 @@ Comparison with Other Methods:
 - vs. Reserved Memory Pools: CMA is more flexible since it allows shared usage when not needed by devices.
 
 CMA improves memory utilization while meeting the needs of hardware requiring contiguous memory.
+
+## Memory Commit, Overcommit, and Limits Explained
+
+### Key Concepts
+#### Commit Limit
+
+This is the total amount of memory that the system can potentially allocate to processes, based on the current overcommit settings. Your value of ~8.18 GB represents the maximum memory (including physical RAM and swap space) that the Linux kernel will allow to be committed to processes.
+
+#### Committed Memory (Committed_AS)
+
+This is an estimate of how much memory has currently been promised (committed) to processes. Your value of ~567.6 MB shows the amount that applications have requested, regardless of whether they're actively using all of it.
+
+#### How Memory Commitment Works
+Memory Overcommit: Linux by default uses an "overcommit" model where it allows the sum of committed memory to exceed physical RAM + swap. This works because:
+
+- Not all committed memory is used immediately
+- Many allocations are never fully utilized
+- Shared memory between processes reduces actual usage
+
+Overcommit Modes (controlled by vm.overcommit_memory sysctl):
+
+- 0 (default): Heuristic overcommit - kernel estimates if request can be satisfied
+- 1: Always overcommit - no memory exhaustion checks
+- 2: No overcommit - strict limit based on CommitLimit
+
+```
+sysctl vm.overcommit_memory
+..
+vm.overcommit_memory = 0
+```
+
+Commit Limit Calculation:
+```
+CommitLimit = (Physical RAM * overcommit_ratio) + Swap Space
+(where overcommit_ratio is typically 50% by default)
+```
+Why This Matters
+
+- Your system shows healthy metrics: Committed memory (567MB) is well below the commit limit (8.18GB)
+- If committed memory approaches the limit, the OOM killer may terminate processes
+
+Monitoring these values helps prevent out-of-memory situations
+
+Key Metrics to Watch
+
+- CommitLimit: Your ceiling for memory commitments
+- Committed_AS: Current memory promises
+- Swap usage: When physical RAM is exhausted
+- OOM killer events: Indicates memory pressure
+
 ## Node-exporter
 ```
 # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
@@ -751,3 +801,29 @@ Memory used by kernel buffers (e.g., for filesystem metadata, I/O operations).
 Memory used for caching files (disk reads/writes).
 
 1.143857152e+09 bytes (~1.14 GB) here.
+
+## CMA (Contiguous Memory Allocator):
+### node_memory_CmaFree_bytes:
+
+Free memory in the CMA region (used for DMA-capable devices).
+
+0 bytes (no free CMA memory here).
+
+### node_memory_CmaTotal_bytes:
+
+Total CMA memory available.
+
+0 bytes (CMA not configured/used here).
+
+## Memory Commit & Limits:
+### node_memory_CommitLimit_bytes:
+
+Total memory allocatable (based on overcommit settings).
+
+8.183586816e+09 bytes (~8.18 GB) here.
+
+### node_memory_Committed_AS_bytes:
+
+Estimated memory allocated by processes (may exceed physical memory).
+
+5.67619584e+08 bytes (~567.6 MB) here.
