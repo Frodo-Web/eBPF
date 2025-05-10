@@ -252,6 +252,15 @@ Hugepagesize:       2048 kB
 Hugetlb:          131072 kB
 ```
 
+| Feature          | Standard Pages (4 KB)      | HugePages (2 MB / 1 GB)    |
+|------------------|---------------------------|----------------------------|
+| **Size**         | Small (4 KB)              | Large (2 MB / 1 GB)        |
+| **TLB Efficiency** | High overhead (more misses) | Lower overhead (fewer misses) |
+| **Fragmentation** | Possible                  | Minimized (pre-allocated)  |
+| **Swappable**    | Yes                       | No (pinned in RAM)         |
+| **Configuration** | Dynamic (default)         | Manual setup required      |
+| **Use Case**     | General-purpose           | Large memory workloads     |
+
 ## node_memory_AnonHugePages_bytes:
 
 Anonymous transparent hugepages allocated.
