@@ -827,3 +827,34 @@ Total memory allocatable (based on overcommit settings).
 Estimated memory allocated by processes (may exceed physical memory).
 
 5.67619584e+08 bytes (~567.6 MB) here.
+
+## Direct Memory Mapping (TLB efficiency - Translation Lookaside Buffer):
+
+```
+TLB Efficiency:
+
+The Translation Lookaside Buffer (TLB) caches virtual-to-physical address translations.
+
+Larger pages mean fewer TLB entries are needed for the same memory range, reducing misses and improving speed.
+
+More hugepages (1G/2M) → Better TLB efficiency → Faster memory access.
+
+Too many small (4K) pages → More TLB misses → Slower performance.
+```
+### node_memory_DirectMap1G_bytes:
+
+Memory mapped with 1GB hugepages (for performance).
+
+1.1811160064e+10 bytes (~11.81 GB) here.
+
+### node_memory_DirectMap2M_bytes:
+
+Memory mapped with 2MB hugepages.
+
+6.163529728e+09 bytes (~6.16 GB) here.
+
+### node_memory_DirectMap4k_bytes:
+
+Memory mapped with standard 4KB pages.
+
+1.44883712e+08 bytes (~144.9 MB) here.
