@@ -1,0 +1,9 @@
+[Unit]
+Description=Alloy
+
+[Service]
+User=root
+ExecStart=/opt/alloy1.8.2/alloy-linux-amd64 run /opt/alloy1.8.2/alloy-config.river --server.http.listen-addr=192.168.0.200:12345
+
+[Install]
+WantedBy=multi-user.target
