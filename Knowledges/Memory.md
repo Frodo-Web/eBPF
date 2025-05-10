@@ -1265,3 +1265,240 @@ Includes /dev/shm, tmpfs mounts, and shmget() allocations.
 Why it Matters:
 
 High usage can exhaust memory (shared memory is not swappable).
+
+## node_memory_Slab_bytes (122.62 MB)
+What it is:
+Memory used by the kernel's slab allocator - a caching system for frequently-used kernel objects.
+
+How it works:
+
+The slab allocator pre-allocates memory for common kernel structures (like inodes, dentries, network sockets)
+
+Organized in caches (view with slabtop or cat /proc/slabinfo)
+
+Contains:
+
+SReclaimable: Cache that can be reclaimed under memory pressure
+
+SUnreclaim: Essential kernel objects that can't be reclaimed
+
+Why it matters:
+High slab usage may indicate:
+
+Many active kernel objects (e.g., frequent filesystem operations)
+
+Memory leaks if growing uncontrollably
+
+## Swap Metrics (SwapCached, SwapFree, SwapTotal = 0)
+What they show:
+
+SwapTotal: Total swap space available (0 means swap is disabled)
+
+SwapFree: Unused swap space
+
+SwapCached: Memory swapped out but cached for potential reuse
+
+## node_memory_Unevictable_bytes (139.26 KB)
+What it is:
+
+Memory that cannot be paged out, even when under memory pressure.
+
+Common causes:
+
+Memory locked with mlock() system call
+
+Shared memory segments (SHM_LOCK)
+
+Kernel modules pinning memory
+
+Some driver allocations
+
+Significance:
+
+Small value here is normal. Large amounts may indicate:
+
+Security applications locking sensitive data
+
+Real-time systems avoiding page faults
+
+## Vmalloc Metrics
+
+```
+ What is vmalloc?
+vmalloc is a Linux kernel memory allocation mechanism that:
+
+Provides virtually contiguous memory regions (not necessarily physically contiguous)
+
+Uses the kernel's virtual address space (outside direct physical memory mapping)
+
+Designed for large allocations where physical contiguity isn't required
+
+Backed by vmalloc()/vfree() system calls
+
+2. How vmalloc Works
+Allocation Request: Kernel subsystem calls vmalloc(size)
+Virtual Space Allocation: Kernel finds a contiguous virtual range in the vmalloc area (between VMALLOC_START and VMALLOC_END)
+Page Table Setup: Maps physical pages (possibly scattered) to the virtual range
+Return Virtual Address: Caller gets a contiguous virtual address space
+
+Key Characteristics
+
+Feature	vmalloc	kmalloc (regular allocator)
+Contiguity	Virtual only	Physical + virtual
+Size Limit	Large (theoretical ~32TB)	Small (typically < 4MB)
+Performance	Slower (TLB overhead)	Faster
+Use Cases	Modules, large buffers	Small, frequent allocations
+
+Common Users of vmalloc
+- Kernel modules (their code/data sections)
+- Device drivers needing large buffers
+- BPF programs (eBPF JIT-compiled code)
+- Special mappings (ioremap, vmap)
+```
+
+a) VmallocTotal (35,184,372,087,808 bytes = ~32TB)
+
+Theoretical maximum vmalloc space (x86_64 typically reserves 32TB)
+
+b) VmallocUsed (27.28 MB)
+
+Actual memory allocated through vmalloc()
+
+Used for:
+
+Kernel modules
+
+Large contiguous mappings when physical memory is fragmented
+
+Special device mappings
+
+c) VmallocChunk (0 bytes)
+
+Largest contiguous block available in vmalloc space
+
+0 suggests all vmalloc space is fragmented or fully utilized
+```
+cat /proc/vmallocinfo
+..
+START-END                               SIZE  CALLER+OFFSET/HEXFLAGS  [TYPE] [PHYS_ADDR] [PAGES] [NUMA]
+0xffff9efcc0000000-0xffff9efcc0005000   20480 irq_init_percpu_irqstack+0xcf/0x100 vmap
+0xffff9efcc0005000-0xffff9efcc0007000    8192 acpi_os_map_iomem+0x1b5/0x1f0 phys=0x00000000d8892000 ioremap
+0xffff9efcc0007000-0xffff9efcc0009000    8192 acpi_os_map_iomem+0x1b5/0x1f0 phys=0x00000000d8dcf000 ioremap
+0xffff9efcc000a000-0xffff9efcc000d000   12288 acpi_os_map_iomem+0x1b5/0x1f0 phys=0x00000000d8892000 ioremap
+0xffff9efcc000d000-0xffff9efcc000f000    8192 hpet_enable+0x45/0x370 phys=0x00000000fed00000 ioremap
+0xffff9efcc0041000-0xffff9efcc0043000    8192 gen_pool_add_owner+0x3a/0xc0 pages=1 vmalloc N0=1
+0xffff9efcc0044000-0xffff9efcc0049000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc0049000-0xffff9efcc004b000    8192 gen_pool_add_owner+0x3a/0xc0 pages=1 vmalloc N0=1
+0xffff9efcc004c000-0xffff9efcc0051000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc0081000-0xffff9efcc0083000    8192 acpi_os_map_iomem+0x1b5/0x1f0 phys=0x00000000fed1f000 ioremap
+0xffff9efcc0089000-0xffff9efcc008b000    8192 memremap+0x7e/0x110 phys=0x00000000000ec000 ioremap
+0xffff9efcc008c000-0xffff9efcc0091000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc00c1000-0xffff9efcc00c3000    8192 memremap+0x7e/0x110 phys=0x00000000d9f5c000 ioremap
+0xffff9efcc00c4000-0xffff9efcc00c9000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc00cc000-0xffff9efcc00d1000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc0101000-0xffff9efcc0103000    8192 bpf_prog_alloc_no_stats+0x37/0x240 pages=1 vmalloc N0=1
+0xffff9efcc0104000-0xffff9efcc0109000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+0xffff9efcc0109000-0xffff9efcc010b000    8192 bpf_prog_alloc_no_stats+0x37/0x240 pages=1 vmalloc N0=1
+...
+0xffffffffc156a000-0xffffffffc1583000  102400 move_module+0x7b/0x270 pages=24 vmalloc N0=24
+0xffffffffc15ac000-0xffffffffc15bf000   77824 move_module+0x7b/0x270 pages=18 vmalloc N0=18
+0xffffffffc15e4000-0xffffffffc15e6000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc15e6000-0xffffffffc15e8000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc15e8000-0xffffffffc15ea000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc15ea000-0xffffffffc15ec000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc15ec000-0xffffffffc15ee000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc15ee000-0xffffffffc15f0000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+0xffffffffc1623000-0xffffffffc1627000   16384 move_module+0x7b/0x270 pages=3 vmalloc N0=3
+0xffffffffc1627000-0xffffffffc1629000    8192 move_module+0x7b/0x270 pages=1 vmalloc N0=1
+...
+0xffff9efcc0679000-0xffff9efcc067b000    8192 unpurged vm_area
+0xffff9efcc0681000-0xffff9efcc0683000    8192 unpurged vm_area
+0xffff9efcc0686000-0xffff9efcc0688000    8192 unpurged vm_area
+0xffff9efcc0689000-0xffff9efcc068b000    8192 unpurged vm_area
+0xffff9efcc068b000-0xffff9efcc068d000    8192 unpurged vm_area
+0xffff9efcc068d000-0xffff9efcc068f000    8192 unpurged vm_area
+0xffff9efcc068f000-0xffff9efcc0691000    8192 unpurged vm_area
+0xffff9efcc0691000-0xffff9efcc0693000    8192 unpurged vm_area
+0xffff9efcc0693000-0xffff9efcc0695000    8192 unpurged vm_area
+```
+### Examples
+Kernel Module Loading
+```
+0xffffffffc156a000-0xffffffffc1583000  102400 move_module+0x7b/0x270 pages=24 vmalloc N0=24
+```
+- 100KB allocation for a kernel module (move_module)
+- Uses 24 pages (24 x 4KB = 96KB + 4KB overhead)
+- Loaded on NUMA node 0
+
+Hardware I/O Mapping (ioremap)
+```
+0xffff9efcc0005000-0xffff9efcc0007000    8192 acpi_os_map_iomem+0x1b5/0x1f0 phys=0x00000000d8892000 ioremap
+```
+- Maps 8KB of physical hardware memory at 0xd8892000
+- Used by ACPI subsystem to access hardware registers
+
+Process Creation (dup_task_struct)
+```
+0xffff9efcc0044000-0xffff9efcc0049000   20480 dup_task_struct+0x57/0x1b0 pages=4 vmalloc N0=4
+```
+- 20KB allocation when duplicating task structures (forking processes)
+- Uses 4 pages (16KB + metadata)
+
+Unpurged VM Areas
+```
+0xffff9efcc0679000-0xffff9efcc067b000    8192 unpurged vm_area
+```
+- Freed memory not yet reclaimed by the kernel
+- Common during memory pressure or frequent alloc/free cycles
+### Detailed breakdown by caller
+```
+cat /proc/vmallocinfo | awk '{print $3}' | sort | uniq -c | sort -nr
+   2012 unpurged
+    359 move_module+0x7b/0x270
+    181 dup_task_struct+0x57/0x1b0
+    176 bpf_prog_alloc_no_stats+0x37/0x240
+     10 acpi_os_map_iomem+0x1b5/0x1f0
+      4 n_tty_open+0x14/0xa0
+      4 memremap+0x7e/0x110
+      4 irq_init_percpu_irqstack+0xcf/0x100
+      4 i915_gem_object_map_page+0x142/0x220
+      4 gen_pool_add_owner+0x3a/0xc0
+      3 pcim_iomap_region.part.0+0x94/0xe0
+      3 devm_ioremap+0x46/0x90
+      2 map_iommu+0x50/0x200
+      1 snb_uncore_imc_init_box+0x78/0xd0
+      1 pcpu_get_vm_areas+0x0/0x1000
+      1 pcpu_alloc_chunk+0xe0/0x120
+      1 pcpu_alloc_chunk+0x77/0x120
+      1 pcpu_alloc_chunk+0x50/0x120
+      1 pcim_iomap+0x4a/0xb0
+      1 pci_mmcfg_arch_init+0x60/0xe0
+      1 kimage_crash_copy_vmcoreinfo+0x88/0xd0
+      1 intel_uncore_setup_mmio+0x39/0xa0
+      1 intel_pstate_init+0x18e/0x560
+      1 i915_ggtt_init_hw+0x91/0x130
+      1 hpet_enable+0x45/0x370
+      1 ggtt_probe_common+0x133/0x1c0
+      1 fw_decompress_xz+0x1ec/0x230
+      1 alloc_new_pack+0x6d/0x180
+      1 __pci_enable_msix_range+0x289/0x530
+      1 __devm_ioremap+0xa4/0xc0
+```
+##  Writeback Metrics (Writeback_bytes, WritebackTmp_bytes = 0)
+What they track:
+
+Writeback: Data being written from RAM to disk
+
+WritebackTmp: Temporary buffers used during writeback
+
+Why both are 0:
+
+No active filesystem writeback operations
+
+System either:
+
+Has fast storage completing writes immediately
+
+Isn't under heavy write load
+
+Uses synchronous writes (O_DIRECT)
