@@ -348,6 +348,61 @@ kmalloc-96          5271   5922     96   42    1 : tunables    0    0    0 : sla
 kmem_cache_node      448    448     64   64    1 : tunables    0    0    0 : slabdata      7      7      0
 kmem_cache           368    368    256   16    1 : tunables    0    0    0 : slabdata     23     23      0
 ```
+
+## Contiguous Memory Allocator (CMA)
+The Contiguous Memory Allocator (CMA) is a memory management mechanism in the Linux kernel designed to allocate contiguous blocks of physical memory for devices that require large, physically contiguous memory regions.
+
+Key Features of CMA:
+
+Purpose:
+
+- Some hardware devices (e.g., GPUs, DMA controllers, video codecs) require physically contiguous memory for efficient operation.
+
+- Traditional memory allocation (e.g., kmalloc) may fail for large contiguous blocks due to memory fragmentation.
+
+How CMA Works:
+
+- Reserved at Boot Time: CMA reserves a portion of memory during kernel initialization.
+
+Dynamic Allocation & Release:
+
+- When not in use by devices, the CMA memory is available for general use (e.g., movable pages for the buddy allocator).
+
+- When a device driver requests contiguous memory, CMA reclaims the memory (possibly migrating movable pages).
+
+Advantages:
+
+- Reduces memory waste by allowing CMA regions to be used for non-contiguous allocations when not needed.
+
+- Avoids the need for dedicated pre-allocated memory pools.
+
+Configuration:
+
+- CMA size and placement are set via kernel command-line parameters (e.g., cma=64M@0x38000000).
+
+- Can also be configured via Device Tree (for ARM-based systems).
+
+Usage in Drivers:
+
+- Drivers use the dma_alloc_contiguous() or CMA-specific APIs to request contiguous memory.
+
+Example Use Cases:
+
+- Video processing (e.g., cameras, display buffers).
+
+- DMA operations for high-speed peripherals.
+
+- GPU framebuffer allocations.
+
+Comparison with Other Methods:
+
+- vs. kmalloc: kmalloc is limited in size (typically a few MBs) and may fail under fragmentation.
+
+- vs. vmalloc: vmalloc provides virtually contiguous (not physically contiguous) memory, unsuitable for DMA.
+
+- vs. Reserved Memory Pools: CMA is more flexible since it allows shared usage when not needed by devices.
+
+CMA improves memory utilization while meeting the needs of hardware requiring contiguous memory.
 ## Node-exporter
 ```
 # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
