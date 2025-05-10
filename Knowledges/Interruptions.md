@@ -186,3 +186,89 @@ CPU contention (if softirq is starving normal processes).
 | SCHED        | 54649  | 51761  | 46302  | 61280    |
 | HRTIMER      | 0      | 0      | 0      | 789      |
 | RCU          | 14711  | 13032  | 14441  | 13414    |
+
+1. HI (High-Priority Tasklets)
+Purpose: Executes high-priority deferred tasks (rarely used in modern kernels).
+
+Typical triggers: Urgent bottom-half processing from hardware interrupts.
+
+Your data:
+
+CPU1=94, others near 0 → Likely a few high-priority kernel tasks ran on CPU1.
+
+2. TIMER (Timer Interrupts)
+Purpose: Handles kernel timers (e.g., scheduling timeouts, periodic tasks).
+
+Impact: High frequency but usually low overhead.
+
+Your data:
+
+CPU0=36K, CPU3=38K → Normal for systems with many timers (e.g., TCP keepalives, cron jobs).
+
+3. NET_TX (Network Transmission)
+Purpose: Processes outbound network packets (packet scheduling, DMA completion).
+
+Impact: Increases with network traffic.
+
+Your data:
+
+CPU3=162 → Indicates moderate outbound traffic (e.g., web server responses).
+
+4. NET_RX (Network Reception)
+Purpose: Handles inbound network packets (packet filtering, protocol stacks).
+
+Impact: Often the most CPU-intensive SoftIRQ under network load.
+
+Your data:
+
+CPU3=356,474 → Bottleneck detected! CPU3 is drowning in packets (likely NIC IRQ affinity issue).
+
+Fix: Balance interrupts with irqbalance or bind NIC IRQs to multiple cores.
+
+5. BLOCK (Block Device I/O)
+Purpose: Completes disk I/O operations (e.g., page cache updates, filesystem tasks).
+
+Impact: High during disk-heavy workloads (database, backups).
+
+Your data:
+
+CPU2=16,214 → Heavy disk I/O (matches ahci IRQs in your /proc/interrupts).
+
+6. IRQ_POLL (IRQ Polling)
+Purpose: Kernel’s polling mode for low-latency devices (rarely used).
+
+Your data: 0 → Default (interrupt-driven I/O is active).
+
+7. TASKLET (Regular Tasklets)
+Purpose: General-purpose deferred work (legacy alternative to workqueues).
+
+Impact: Can cause latency if overloaded.
+
+Your data:
+
+CPU1=1,169, CPU3=1,220 → May indicate kernel drivers using tasklets (e.g., older NIC drivers).
+
+8. SCHED (Scheduler)
+Purpose: Handles thread scheduling (load balancing, CPU migration).
+
+Impact: Scales with process count/context switches.
+
+Your data:
+
+CPU0=54K, CPU3=61K → Expected for multi-core systems running many threads.
+
+9. HRTIMER (High-Resolution Timers)
+Purpose: Precision timers for nanosecond-level tasks (e.g., media playback).
+
+Your data:
+
+CPU3=789 → Likely used by a userspace or kernel service (e.g., audio/video).
+
+10. RCU (Read-Copy-Update)
+Purpose: Synchronization mechanism for lock-free kernel data structures.
+
+Impact: Overhead scales with CPU cores/kernel threads.
+
+Your data:
+
+CPU0=14K, CPU3=13K → Normal for Linux kernels ≥4.x.
