@@ -164,6 +164,12 @@ However, you could also allocate empty memory section not backed by any file. Th
 
 MAP_ANONYMOUS
        The mapping is not backed by any file; its contents are initialized to zero.
+
+If you've ever programmed in C, you're probably familiar with malloc(3) and used it to allocate dynamic memory. In Linux, in most cases, under the hood malloc would actually call mmap to allocate Anonymous memory pages.
+
+AnonPages shows the usage of the most common type of memory - dynamic memory areas that are used by process.
+
+Note that allocating Anonymous pages using mmap or malloc will not necessarily be reflected immediately by the AnonPages; When you allocate dynamic memory, you just get a virtual address space that you can use, but the memory pages do not actually "instantiate" and mapped into the user-space memory of the process until it starts using them (write or read to/from a memory). Only then those memory pages are loaded to the RAM and accounted by AnonPages.
 ```
 
 ### node_memory_Active_bytes:
@@ -177,3 +183,83 @@ Total active memory (both file-backed and anonymous) currently in use.
 Amount of file-backed (cache, mmapped files) memory in active use.
 
 4.39844864e+08 bytes (~439.8 MB) here.
+
+## Anonymous & Huge Pages:
+
+### 1. Standard Pages (Regular Pages)
+Size: Typically 4 KB (on most x86_64 systems).
+
+Purpose: Used for general memory management by the Linux kernel.
+
+Translation Lookaside Buffer (TLB) Usage:
+
+Since pages are small, managing large memory ranges requires many page table entries (PTEs).
+
+This leads to higher TLB misses, increasing overhead due to frequent page table walks.
+
+Fragmentation: More likely to cause memory fragmentation when dealing with large allocations.
+
+Use Case: Suitable for most applications where memory demands are dynamic and unpredictable.
+
+### 2. HugePages
+Size: Much larger than standard pages (commonly 2 MB or 1 GB on x86_64).
+
+Purpose: Optimized for large memory workloads (e.g., databases, virtualization, high-performance computing).
+
+TLB Efficiency:
+
+Fewer PTEs are needed for the same memory range, reducing TLB misses.
+
+Improves performance for memory-intensive applications.
+
+Memory Allocation:
+
+Pre-allocated at boot or runtime (avoids runtime fragmentation).
+
+Cannot be swapped out (pinned in memory).
+
+Administration:
+
+Requires manual configuration (/proc/sys/vm/nr_hugepages).
+
+Applications must explicitly request HugePages (e.g., via mmap() with MAP_HUGETLB).
+
+Use Case: Ideal for applications needing large, contiguous memory blocks (e.g., Oracle DB, Kubernetes nodes, big data processing).
+
+```
+[root@zeus alloy1.8.2]# cat /proc/sys/vm/nr_hugepages
+0
+[root@zeus alloy1.8.2]# cat /proc/meminfo | grep Huge
+AnonHugePages:     63488 kB
+ShmemHugePages:        0 kB
+FileHugePages:         0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+[root@zeus alloy1.8.2]# echo 64 > /proc/sys/vm/nr_hugepages
+[root@zeus alloy1.8.2]# cat /proc/meminfo | grep Huge
+AnonHugePages:     63488 kB
+ShmemHugePages:        0 kB
+FileHugePages:         0 kB
+HugePages_Total:      64
+HugePages_Free:       64
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:          131072 kB
+```
+
+## node_memory_AnonHugePages_bytes:
+
+Anonymous transparent hugepages allocated.
+
+6.5011712e+07 bytes (~65 MB) here.
+
+## node_memory_AnonPages_bytes:
+
+Total anonymous memory (not file-backed, including non-hugepages).
+
+1.40210176e+08 bytes (~140.2 MB) here.
