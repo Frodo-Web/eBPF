@@ -66,3 +66,18 @@ High network traffic (packet processing).
 Kernel bottlenecks (too many timers or deferred tasks).
 
 CPU contention (if softirq is starving normal processes).
+
+### /proc/softirqs
+
+| SoftIRQ Type | CPU0   | CPU1   | CPU2   | CPU3     |
+|--------------|--------|--------|--------|----------|
+| HI           | 0      | 94     | 2      | 0        |
+| TIMER        | 36469  | 31409  | 31211  | 38943    |
+| NET_TX       | 0      | 4      | 1      | 162      |
+| NET_RX       | 449    | 431    | 384    | 356474   |
+| BLOCK        | 49     | 2      | 16214  | 22       |
+| IRQ_POLL     | 0      | 0      | 0      | 0        |
+| TASKLET      | 46     | 1169   | 24     | 1220     |
+| SCHED        | 54649  | 51761  | 46302  | 61280    |
+| HRTIMER      | 0      | 0      | 0      | 789      |
+| RCU          | 14711  | 13032  | 14441  | 13414    |
