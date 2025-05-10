@@ -1,0 +1,21 @@
+prometheus.scrape "default" {
+  targets = [
+    {"__address__" = "localhost:9100", "job" = "node_exporter"},
+    // Add more scrape targets as needed
+  ]
+
+  forward_to = [prometheus.remote_write.default.receiver]
+  scrape_interval = "30s"
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "https://prometheus-prod-$PROM_ID-prod-eu-north-0.grafana.net/api/prom/push"
+
+    // Optional basic authentication
+    basic_auth {
+      username = "$USER"
+      password = "$SECRET"
+    }
+  }
+}
