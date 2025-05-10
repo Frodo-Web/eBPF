@@ -1,3 +1,355 @@
+## SLAB allocator
+SLAB allocator:
+Purpose: Optimizes memory allocation for small, frequently used kernel objects (e.g., process descriptors, network sockets, filesystem metadata).
+
+Replaces traditional malloc() in kernel space to reduce fragmentation and improve performance.
+
+Three main allocators in Linux history:
+- SLAB (original, now mostly deprecated)
+- SLUB (default in modern kernels, simpler and more scalable)
+- SLOB (for embedded systems with very low memory)
+### /proc/slabinfo
+```
+cat /proc/slabinfo
+slabinfo - version: 2.1
+# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables <limit> <batchcount> <sharedfactor> : slabdata <active_slabs> <num_slabs> <sharedavail>
+pid_2                 84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+nf_conntrack_expect      0      0    208   19    1 : tunables    0    0    0 : slabdata      0      0      0
+nf_conntrack          80     80    256   16    1 : tunables    0    0    0 : slabdata      5      5      0
+nf-frags               0      0    184   22    1 : tunables    0    0    0 : slabdata      0      0      0
+kvm_async_pf           0      0    136   30    1 : tunables    0    0    0 : slabdata      0      0      0
+kvm_vcpu               0      0   9216    3    8 : tunables    0    0    0 : slabdata      0      0      0
+kvm_mmu_page_header      0      0    184   22    1 : tunables    0    0    0 : slabdata      0      0      0
+pte_list_desc          0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+x86_emulator           0      0   2672   12    8 : tunables    0    0    0 : slabdata      0      0      0
+fat_inode_cache       21     21    768   21    4 : tunables    0    0    0 : slabdata      1      1      0
+fat_cache              0      0     40  102    1 : tunables    0    0    0 : slabdata      0      0      0
+i915_vma_resource     50     50    320   25    2 : tunables    0    0    0 : slabdata      2      2      0
+i915_vma              50     50    640   25    4 : tunables    0    0    0 : slabdata      2      2      0
+i915_priolist          0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+i915_dependency        0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+execute_cb             0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+i915_request          46     46    704   23    4 : tunables    0    0    0 : slabdata      2      2      0
+drm_i915_gem_object    588    588   1152   28    8 : tunables    0    0    0 : slabdata     21     21      0
+i915_lut_handle        0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+intel_context         42     42    768   21    4 : tunables    0    0    0 : slabdata      2      2      0
+active_node           32     32    128   32    1 : tunables    0    0    0 : slabdata      1      1      0
+xfs_dqtrx              0      0   1320   24    8 : tunables    0    0    0 : slabdata      0      0      0
+xfs_dquot              0      0    528   31    4 : tunables    0    0    0 : slabdata      0      0      0
+xfs_parent_args        0      0    168   24    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_xmi_item           0      0    248   16    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_xmd_item           0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_iul_item           0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_attri_item         0      0    208   19    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_attrd_item         0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_bui_item           0      0    208   19    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_bud_item           0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_cui_item           0      0    432   18    2 : tunables    0    0    0 : slabdata      0      0      0
+xfs_cud_item           0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_rui_item           0      0    688   23    4 : tunables    0    0    0 : slabdata      0      0      0
+xfs_rud_item           0      0    176   23    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_icr                0      0    184   22    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_ili               60     60    200   20    1 : tunables    0    0    0 : slabdata      3      3      0
+xfs_inode             48     48   1024   16    4 : tunables    0    0    0 : slabdata      3      3      0
+xfs_efi_item          18     18    432   18    2 : tunables    0    0    0 : slabdata      1      1      0
+xfs_efd_item          18     18    440   18    2 : tunables    0    0    0 : slabdata      1      1      0
+xfs_buf_item         120    120    272   30    2 : tunables    0    0    0 : slabdata      4      4      0
+xfs_trans             68     68    232   17    1 : tunables    0    0    0 : slabdata      4      4      0
+xfs_ifork              0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_da_state           0      0    480   17    2 : tunables    0    0    0 : slabdata      0      0      0
+xfs_exchmaps_intent      0      0     80   51    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_attr_intent       46     46     88   46    1 : tunables    0    0    0 : slabdata      1      1      0
+xfs_extfree_intent     73     73     56   73    1 : tunables    0    0    0 : slabdata      1      1      0
+xfs_bmap_intent        0      0     72   56    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_refc_intent        0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_rmap_intent        0      0     80   51    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_defer_pending     64     64     64   64    1 : tunables    0    0    0 : slabdata      1      1      0
+xfs_rtrefcountbt_cur      0      0    216   18    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_rtrmapbt_cur       0      0    456   17    2 : tunables    0    0    0 : slabdata      0      0      0
+xfs_refcbt_cur         0      0    216   18    1 : tunables    0    0    0 : slabdata      0      0      0
+xfs_rmapbt_cur         0      0    280   29    2 : tunables    0    0    0 : slabdata      0      0      0
+xfs_bmbt_cur           0      0    344   23    2 : tunables    0    0    0 : slabdata      0      0      0
+xfs_inobt_cur         36     36    216   18    1 : tunables    0    0    0 : slabdata      2      2      0
+xfs_bnobt_cur         17     17    232   17    1 : tunables    0    0    0 : slabdata      1      1      0
+xfs_log_ticket       340    340     48   85    1 : tunables    0    0    0 : slabdata      4      4      0
+xfs_buf               63     63    384   21    2 : tunables    0    0    0 : slabdata      3      3      0
+drm_buddy_block        0      0     72   56    1 : tunables    0    0    0 : slabdata      0      0      0
+bio-160               21     21    192   21    1 : tunables    0    0    0 : slabdata      1      1      0
+kcopyd_job             0      0   3240   10    8 : tunables    0    0    0 : slabdata      0      0      0
+io                     0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+dm_uevent              0      0   2888   11    8 : tunables    0    0    0 : slabdata      0      0      0
+ext4_groupinfo_4k   2178   2178    184   22    1 : tunables    0    0    0 : slabdata     99     99      0
+ext4_fc_dentry_update      0      0    104   39    1 : tunables    0    0    0 : slabdata      0      0      0
+ext4_inode_cache   11282  11284   1152   28    8 : tunables    0    0    0 : slabdata    403    403      0
+ext4_free_data       292    292     56   73    1 : tunables    0    0    0 : slabdata      4      4      0
+ext4_allocation_context    104    104    152   26    1 : tunables    0    0    0 : slabdata      4      4      0
+ext4_prealloc_space    144    144    112   36    1 : tunables    0    0    0 : slabdata      4      4      0
+ext4_system_zone     204    204     40  102    1 : tunables    0    0    0 : slabdata      2      2      0
+ext4_io_end_vec      896    896     32  128    1 : tunables    0    0    0 : slabdata      7      7      0
+ext4_io_end          448    704     64   64    1 : tunables    0    0    0 : slabdata     11     11      0
+bio_post_read_ctx    170    170     48   85    1 : tunables    0    0    0 : slabdata      2      2      0
+pending_reservation      0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+extent_status       8466   8466     40  102    1 : tunables    0    0    0 : slabdata     83     83      0
+mb_cache_entry       292    292     56   73    1 : tunables    0    0    0 : slabdata      4      4      0
+jbd2_transaction_s    112    112    256   16    1 : tunables    0    0    0 : slabdata      7      7      0
+jbd2_inode          1728   1728     64   64    1 : tunables    0    0    0 : slabdata     27     27      0
+jbd2_journal_handle    511    803     56   73    1 : tunables    0    0    0 : slabdata     11     11      0
+jbd2_journal_head    408    408    120   34    1 : tunables    0    0    0 : slabdata     12     12      0
+jbd2_revoke_table_s    256    256     16  256    1 : tunables    0    0    0 : slabdata      1      1      0
+jbd2_revoke_record_s    512    512     32  128    1 : tunables    0    0    0 : slabdata      4      4      0
+bio-120              128    128    128   32    1 : tunables    0    0    0 : slabdata      4      4      0
+scsi_sense_cache     352    352    128   32    1 : tunables    0    0    0 : slabdata     11     11      0
+fuse_request           0      0    168   24    1 : tunables    0    0    0 : slabdata      0      0      0
+fuse_inode             0      0    896   18    4 : tunables    0    0    0 : slabdata      0      0      0
+net_bridge_fdb_entry    128    128    128   32    1 : tunables    0    0    0 : slabdata      4      4      0
+ovl_inode              0      0    696   23    4 : tunables    0    0    0 : slabdata      0      0      0
+MPTCPv6                0      0   2176   15    8 : tunables    0    0    0 : slabdata      0      0      0
+ip6-frags              0      0    184   22    1 : tunables    0    0    0 : slabdata      0      0      0
+fib6_node            256    256     64   64    1 : tunables    0    0    0 : slabdata      4      4      0
+ip6_dst_cache         64     64    256   16    1 : tunables    0    0    0 : slabdata      4      4      0
+mfc6_cache             0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+PINGv6                 0      0   1216   26    8 : tunables    0    0    0 : slabdata      0      0      0
+RAWv6                 78     78   1216   26    8 : tunables    0    0    0 : slabdata      3      3      0
+UDPLITEv6              0      0   1344   24    8 : tunables    0    0    0 : slabdata      0      0      0
+UDPv6                 96     96   1344   24    8 : tunables    0    0    0 : slabdata      4      4      0
+tw_sock_TCPv6         32     32    256   16    1 : tunables    0    0    0 : slabdata      2      2      0
+request_sock_TCPv6     52     52    312   26    2 : tunables    0    0    0 : slabdata      2      2      0
+TCPv6                 48     48   2624   12    8 : tunables    0    0    0 : slabdata      4      4      0
+uhci_urb_priv          0      0     56   73    1 : tunables    0    0    0 : slabdata      0      0      0
+btree_node             0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+io_buffer              0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+io_kiocb               0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+bfq_io_cq              0      0   1360   24    8 : tunables    0    0    0 : slabdata      0      0      0
+bfq_queue              0      0    576   28    4 : tunables    0    0    0 : slabdata      0      0      0
+bio-248               64     64    256   16    1 : tunables    0    0    0 : slabdata      4      4      0
+mqueue_inode_cache     34     34    960   17    4 : tunables    0    0    0 : slabdata      2      2      0
+kioctx               112    112    576   28    4 : tunables    0    0    0 : slabdata      4      4      0
+aio_kiocb             84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+userfaultfd_ctx_cache      0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+fanotify_perm_event      0      0    112   36    1 : tunables    0    0    0 : slabdata      0      0      0
+fanotify_path_event      0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+fanotify_fid_event      0      0     72   56    1 : tunables    0    0    0 : slabdata      0      0      0
+fanotify_mark          0      0     80   51    1 : tunables    0    0    0 : slabdata      0      0      0
+dnotify_mark           0      0     80   51    1 : tunables    0    0    0 : slabdata      0      0      0
+dnotify_struct         0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+dio                    0      0    640   25    4 : tunables    0    0    0 : slabdata      0      0      0
+fasync_cache           0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+audit_tree_mark        0      0     80   51    1 : tunables    0    0    0 : slabdata      0      0      0
+pid_namespace         28     28    288   28    2 : tunables    0    0    0 : slabdata      1      1      0
+posix_timers_cache      0      0    360   22    2 : tunables    0    0    0 : slabdata      0      0      0
+UNIX-STREAM          160    160   1024   16    4 : tunables    0    0    0 : slabdata     10     10      0
+UNIX                  96     96   1024   16    4 : tunables    0    0    0 : slabdata      6      6      0
+ip4-frags              0      0    200   20    1 : tunables    0    0    0 : slabdata      0      0      0
+mfc_cache              0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+UDP-Lite               0      0   1152   28    8 : tunables    0    0    0 : slabdata      0      0      0
+MPTCP                 48     48   1984   16    8 : tunables    0    0    0 : slabdata      3      3      0
+request_sock_subflow_v6      0      0    384   21    2 : tunables    0    0    0 : slabdata      0      0      0
+request_sock_subflow_v4     21     21    384   21    2 : tunables    0    0    0 : slabdata      1      1      0
+tcp_bind2_bucket     128    128    128   32    1 : tunables    0    0    0 : slabdata      4      4      0
+tcp_bind_bucket      128    128    128   32    1 : tunables    0    0    0 : slabdata      4      4      0
+inet_peer             21     21    192   21    1 : tunables    0    0    0 : slabdata      1      1      0
+xfrm_dst               0      0    320   25    2 : tunables    0    0    0 : slabdata      0      0      0
+xfrm_state             0      0    832   19    4 : tunables    0    0    0 : slabdata      0      0      0
+ip_fib_trie          255    255     48   85    1 : tunables    0    0    0 : slabdata      3      3      0
+ip_fib_alias         219    219     56   73    1 : tunables    0    0    0 : slabdata      3      3      0
+rtable                84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+PING                   0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+RAW                   16     16   1024   16    4 : tunables    0    0    0 : slabdata      1      1      0
+UDP                  112    112   1152   28    8 : tunables    0    0    0 : slabdata      4      4      0
+tw_sock_TCP           64     64    256   16    1 : tunables    0    0    0 : slabdata      4      4      0
+request_sock_TCP     104    104    312   26    2 : tunables    0    0    0 : slabdata      4      4      0
+TCP                   52     52   2432   13    8 : tunables    0    0    0 : slabdata      4      4      0
+hugetlbfs_inode_cache     52     52    624   26    4 : tunables    0    0    0 : slabdata      2      2      0
+dquot                  0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+bio-240              240    240    256   16    1 : tunables    0    0    0 : slabdata     15     15      0
+backing_aio            0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+ep_head             1024   1024     16  256    1 : tunables    0    0    0 : slabdata      4      4      0
+eventpoll_pwq        448    448     64   64    1 : tunables    0    0    0 : slabdata      7      7      0
+eventpoll_epi        537    864    128   32    1 : tunables    0    0    0 : slabdata     27     27      0
+inotify_inode_mark    561    561     80   51    1 : tunables    0    0    0 : slabdata     11     11      0
+dax_cache             42     42    768   21    4 : tunables    0    0    0 : slabdata      2      2      0
+sgpool-128            48     48   4096    8    8 : tunables    0    0    0 : slabdata      6      6      0
+sgpool-64             64     64   2048   16    8 : tunables    0    0    0 : slabdata      4      4      0
+sgpool-32             64     64   1024   16    4 : tunables    0    0    0 : slabdata      4      4      0
+sgpool-16             64     64    512   16    2 : tunables    0    0    0 : slabdata      4      4      0
+sgpool-8              64     64    256   16    1 : tunables    0    0    0 : slabdata      4      4      0
+request_queue         34     34    936   17    4 : tunables    0    0    0 : slabdata      2      2      0
+blkdev_ioc           184    184     88   46    1 : tunables    0    0    0 : slabdata      4      4      0
+bio-184              273    273    192   21    1 : tunables    0    0    0 : slabdata     13     13      0
+biovec-max           116    128   4096    8    8 : tunables    0    0    0 : slabdata     16     16      0
+biovec-128            32     32   2048   16    8 : tunables    0    0    0 : slabdata      2      2      0
+biovec-64             64     64   1024   16    4 : tunables    0    0    0 : slabdata      4      4      0
+biovec-16             64     64    256   16    1 : tunables    0    0    0 : slabdata      4      4      0
+bio_integrity_payload     21     21    192   21    1 : tunables    0    0    0 : slabdata      1      1      0
+msg_msg-8k             0      0   8192    4    8 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-4k             0      0   4096    8    8 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-2k             0      0   2048   16    8 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-1k             0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-512            0      0    512   16    2 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-256            0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-128            0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-64             0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-32             0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-16             0      0     16  256    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-8              0      0      8  512    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-192            0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+msg_msg-96             0      0     96   42    1 : tunables    0    0    0 : slabdata      0      0      0
+khugepaged_mm_slot    408    408     40  102    1 : tunables    0    0    0 : slabdata      4      4      0
+ksm_mm_slot            0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+ksm_stable_node        0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+ksm_rmap_item          0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-8k         0      0   8192    4    8 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-4k        24     24   4096    8    8 : tunables    0    0    0 : slabdata      3      3      0
+memdup_user-2k         0      0   2048   16    8 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-1k         0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-512       16     16    512   16    2 : tunables    0    0    0 : slabdata      1      1      0
+memdup_user-256        0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-128       64     64    128   32    1 : tunables    0    0    0 : slabdata      2      2      0
+memdup_user-64       256    256     64   64    1 : tunables    0    0    0 : slabdata      4      4      0
+memdup_user-32       512    512     32  128    1 : tunables    0    0    0 : slabdata      4      4      0
+memdup_user-16      1024   1024     16  256    1 : tunables    0    0    0 : slabdata      4      4      0
+memdup_user-8       2048   2048      8  512    1 : tunables    0    0    0 : slabdata      4      4      0
+memdup_user-192        0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+memdup_user-96       168    168     96   42    1 : tunables    0    0    0 : slabdata      4      4      0
+user_namespace        26     26    616   26    4 : tunables    0    0    0 : slabdata      1      1      0
+uid_cache             84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+iommu_iova_magazine      0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+iommu_iova             0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+dmaengine-unmap-256     15     15   2112   15    8 : tunables    0    0    0 : slabdata      1      1      0
+dmaengine-unmap-128     30     30   1088   30    8 : tunables    0    0    0 : slabdata      1      1      0
+dmaengine-unmap-16     21     21    192   21    1 : tunables    0    0    0 : slabdata      1      1      0
+dmaengine-unmap-2     64     64     64   64    1 : tunables    0    0    0 : slabdata      1      1      0
+audit_buffer         680    680     24  170    1 : tunables    0    0    0 : slabdata      4      4      0
+sock_inode_cache     418    418    832   19    4 : tunables    0    0    0 : slabdata     22     22      0
+skbuff_ext_cache      84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+skbuff_small_head    322    414    704   23    4 : tunables    0    0    0 : slabdata     18     18      0
+skbuff_fclone_cache     64     64    512   16    2 : tunables    0    0    0 : slabdata      4      4      0
+skbuff_head_cache    336    336    256   16    1 : tunables    0    0    0 : slabdata     21     21      0
+tracefs_inode_cache    175    175    648   25    4 : tunables    0    0    0 : slabdata      7      7      0
+debugfs_inode_cache    725    725    632   25    4 : tunables    0    0    0 : slabdata     29     29      0
+configfs_dir_cache      0      0     88   46    1 : tunables    0    0    0 : slabdata      0      0      0
+file_lease_cache       0      0    160   25    1 : tunables    0    0    0 : slabdata      0      0      0
+file_lock_cache       84     84    192   21    1 : tunables    0    0    0 : slabdata      4      4      0
+file_lock_ctx        438    438     56   73    1 : tunables    0    0    0 : slabdata      6      6      0
+fsnotify_mark_connector    680    680     24  170    1 : tunables    0    0    0 : slabdata      4      4      0
+buffer_head       211926 211926    104   39    1 : tunables    0    0    0 : slabdata   5434   5434      0
+x86_lbr                0      0    800   20    4 : tunables    0    0    0 : slabdata      0      0      0
+task_delay_info        0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+taskstats            116    116    560   29    4 : tunables    0    0    0 : slabdata      4      4      0
+proc_dir_entry       693    693    192   21    1 : tunables    0    0    0 : slabdata     33     33      0
+pde_opener           408    408     40  102    1 : tunables    0    0    0 : slabdata      4      4      0
+proc_inode_cache    2084   2139    688   23    4 : tunables    0    0    0 : slabdata     93     93      0
+seq_file             136    136    120   34    1 : tunables    0    0    0 : slabdata      4      4      0
+sigqueue             204    204     80   51    1 : tunables    0    0    0 : slabdata      4      4      0
+bdev_cache            60     60   1600   20    8 : tunables    0    0    0 : slabdata      3      3      0
+shmem_inode_cache   3131   3256    744   22    4 : tunables    0    0    0 : slabdata    148    148      0
+kernfs_iattrs_cache   1410   1785     80   51    1 : tunables    0    0    0 : slabdata     35     35      0
+kernfs_node_cache  43965  44220    136   30    1 : tunables    0    0    0 : slabdata   1474   1474      0
+mnt_cache            777    777    384   21    2 : tunables    0    0    0 : slabdata     37     37      0
+bfilp                  0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+filp                1593   1701    192   21    1 : tunables    0    0    0 : slabdata     81     81      0
+inode_cache        11884  12038    616   26    4 : tunables    0    0    0 : slabdata    463    463      0
+dentry             33217  33516    192   21    1 : tunables    0    0    0 : slabdata   1596   1596      0
+names_cache           56     88   4096    8    8 : tunables    0    0    0 : slabdata     11     11      0
+net_namespace         14     14   4672    7    8 : tunables    0    0    0 : slabdata      2      2      0
+ima_iint_cache         0      0    104   39    1 : tunables    0    0    0 : slabdata      0      0      0
+hashtab_node       17680  17680     24  170    1 : tunables    0    0    0 : slabdata    104    104      0
+ebitmap_node       45120  45120     64   64    1 : tunables    0    0    0 : slabdata    705    705      0
+avtab_extended_perms      0      0     40  102    1 : tunables    0    0    0 : slabdata      0      0      0
+avtab_node         93160  93160     24  170    1 : tunables    0    0    0 : slabdata    548    548      0
+extended_perms_data      0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+avc_xperms_decision_node      0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+avc_xperms_node        0      0     56   73    1 : tunables    0    0    0 : slabdata      0      0      0
+avc_node             962   1064     72   56    1 : tunables    0    0    0 : slabdata     19     19      0
+lsm_inode_cache    29264  29580    120   34    1 : tunables    0    0    0 : slabdata    870    870      0
+lsm_file_cache      1709   2048     32  128    1 : tunables    0    0    0 : slabdata     16     16      0
+key_jar              384    384    256   16    1 : tunables    0    0    0 : slabdata     24     24      0
+uts_namespace         72     72    432   18    2 : tunables    0    0    0 : slabdata      4      4      0
+nsproxy              224    224     72   56    1 : tunables    0    0    0 : slabdata      4      4      0
+vma_lock            5999   6732     40  102    1 : tunables    0    0    0 : slabdata     66     66      0
+vm_area_struct      5675   6072    176   23    1 : tunables    0    0    0 : slabdata    264    264      0
+fs_cache             256    256     64   64    1 : tunables    0    0    0 : slabdata      4      4      0
+files_cache          138    138    704   23    4 : tunables    0    0    0 : slabdata      6      6      0
+signal_cache         276    308   1152   28    8 : tunables    0    0    0 : slabdata     11     11      0
+sighand_cache        255    255   2112   15    8 : tunables    0    0    0 : slabdata     17     17      0
+task_struct          195    212   6656    4    8 : tunables    0    0    0 : slabdata     53     53      0
+cred                 609    609    192   21    1 : tunables    0    0    0 : slabdata     29     29      0
+anon_vma_chain      2929   3200     64   64    1 : tunables    0    0    0 : slabdata     50     50      0
+anon_vma            1893   2145    104   39    1 : tunables    0    0    0 : slabdata     55     55      0
+pid                  336    336    192   21    1 : tunables    0    0    0 : slabdata     16     16      0
+Acpi-Operand        4536   4536     72   56    1 : tunables    0    0    0 : slabdata     81     81      0
+Acpi-ParseExt        204    204     80   51    1 : tunables    0    0    0 : slabdata      4      4      0
+Acpi-Parse           365    365     56   73    1 : tunables    0    0    0 : slabdata      5      5      0
+Acpi-State           204    204     80   51    1 : tunables    0    0    0 : slabdata      4      4      0
+Acpi-Namespace      2805   2805     48   85    1 : tunables    0    0    0 : slabdata     33     33      0
+shared_policy_node      0      0     48   85    1 : tunables    0    0    0 : slabdata      0      0      0
+numa_policy           30     30    272   30    2 : tunables    0    0    0 : slabdata      1      1      0
+perf_event            96     96   1312   24    8 : tunables    0    0    0 : slabdata      4      4      0
+trace_event_file    2982   2982     96   42    1 : tunables    0    0    0 : slabdata     71     71      0
+ftrace_event_field   7738   7738     56   73    1 : tunables    0    0    0 : slabdata    106    106      0
+pool_workqueue       352    352    512   16    2 : tunables    0    0    0 : slabdata     22     22      0
+maple_node          1239   1744    256   16    1 : tunables    0    0    0 : slabdata    109    109      0
+radix_tree_node     8532   8624    584   28    4 : tunables    0    0    0 : slabdata    308    308      0
+task_group           125    125    640   25    4 : tunables    0    0    0 : slabdata      5      5      0
+mm_struct             92     92   1408   23    8 : tunables    0    0    0 : slabdata      4      4      0
+vmap_area           3864   3864     72   56    1 : tunables    0    0    0 : slabdata     69     69      0
+kmalloc_buckets       36     36    112   36    1 : tunables    0    0    0 : slabdata      1      1      0
+kmalloc-cg-8k          4      4   8192    4    8 : tunables    0    0    0 : slabdata      1      1      0
+kmalloc-cg-4k         88     88   4096    8    8 : tunables    0    0    0 : slabdata     11     11      0
+kmalloc-cg-2k        428    544   2048   16    8 : tunables    0    0    0 : slabdata     34     34      0
+kmalloc-cg-1k        261    288   1024   16    4 : tunables    0    0    0 : slabdata     18     18      0
+kmalloc-cg-512       240    240    512   16    2 : tunables    0    0    0 : slabdata     15     15      0
+kmalloc-cg-256        80     80    256   16    1 : tunables    0    0    0 : slabdata      5      5      0
+kmalloc-cg-128       224    224    128   32    1 : tunables    0    0    0 : slabdata      7      7      0
+kmalloc-cg-64        448    448     64   64    1 : tunables    0    0    0 : slabdata      7      7      0
+kmalloc-cg-32       5131   5632     32  128    1 : tunables    0    0    0 : slabdata     44     44      0
+kmalloc-cg-16       1024   1024     16  256    1 : tunables    0    0    0 : slabdata      4      4      0
+kmalloc-cg-8        2048   2048      8  512    1 : tunables    0    0    0 : slabdata      4      4      0
+kmalloc-cg-192       189    189    192   21    1 : tunables    0    0    0 : slabdata      9      9      0
+kmalloc-cg-96       4443   5082     96   42    1 : tunables    0    0    0 : slabdata    121    121      0
+dma-kmalloc-8k         0      0   8192    4    8 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-4k         0      0   4096    8    8 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-2k         0      0   2048   16    8 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-1k         0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-512        0      0    512   16    2 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-256        0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-128        0      0    128   32    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-64         0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-32         0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-16       256    256     16  256    1 : tunables    0    0    0 : slabdata      1      1      0
+dma-kmalloc-8          0      0      8  512    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-192        0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+dma-kmalloc-96         0      0     96   42    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-8k         0      0   8192    4    8 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-4k         0      0   4096    8    8 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-2k         0      0   2048   16    8 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-1k         0      0   1024   16    4 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-512        0      0    512   16    2 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-256        0      0    256   16    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-128      128    128    128   32    1 : tunables    0    0    0 : slabdata      4      4      0
+kmalloc-rcl-64         0      0     64   64    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-32         0      0     32  128    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-16         0      0     16  256    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-8          0      0      8  512    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-192        0      0    192   21    1 : tunables    0    0    0 : slabdata      0      0      0
+kmalloc-rcl-96       420    420     96   42    1 : tunables    0    0    0 : slabdata     10     10      0
+kmalloc-8k           100    112   8192    4    8 : tunables    0    0    0 : slabdata     28     28      0
+kmalloc-4k           472    480   4096    8    8 : tunables    0    0    0 : slabdata     60     60      0
+kmalloc-2k           712    784   2048   16    8 : tunables    0    0    0 : slabdata     49     49      0
+kmalloc-1k          1790   1824   1024   16    4 : tunables    0    0    0 : slabdata    114    114      0
+kmalloc-512         7277   7328    512   16    2 : tunables    0    0    0 : slabdata    458    458      0
+kmalloc-256         4313   4352    256   16    1 : tunables    0    0    0 : slabdata    272    272      0
+kmalloc-128          995   1024    128   32    1 : tunables    0    0    0 : slabdata     32     32      0
+kmalloc-64         14986  15488     64   64    1 : tunables    0    0    0 : slabdata    242    242      0
+kmalloc-32         20652  20992     32  128    1 : tunables    0    0    0 : slabdata    164    164      0
+kmalloc-16         30781  31232     16  256    1 : tunables    0    0    0 : slabdata    122    122      0
+kmalloc-8          15321  15360      8  512    1 : tunables    0    0    0 : slabdata     30     30      0
+kmalloc-192         3505   3612    192   21    1 : tunables    0    0    0 : slabdata    172    172      0
+kmalloc-96          5271   5922     96   42    1 : tunables    0    0    0 : slabdata    141    141      0
+kmem_cache_node      448    448     64   64    1 : tunables    0    0    0 : slabdata      7      7      0
+kmem_cache           368    368    256   16    1 : tunables    0    0    0 : slabdata     23     23      0
+```
+## Node-exporter
 ```
 # HELP node_memory_Active_anon_bytes Memory information field Active_anon_bytes.
 # TYPE node_memory_Active_anon_bytes gauge
@@ -272,3 +624,16 @@ Anonymous transparent hugepages allocated.
 Total anonymous memory (not file-backed, including non-hugepages).
 
 1.40210176e+08 bytes (~140.2 MB) here.
+
+## Buffers & Cache:
+### node_memory_Buffers_bytes:
+
+Memory used by kernel buffers (e.g., for filesystem metadata, I/O operations).
+
+3.8846464e+07 bytes (~38.8 MB) here.
+
+### node_memory_Cached_bytes:
+
+Memory used for caching files (disk reads/writes).
+
+1.143857152e+09 bytes (~1.14 GB) here.
