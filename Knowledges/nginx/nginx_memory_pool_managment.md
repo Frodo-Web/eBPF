@@ -110,3 +110,46 @@ ngx_pool_t
 ├── cleanup         → list of cleanup callbacks
 └── log             → logging context
 ```
+On github there even a module created in the past which helps debug memory pools - https://github.com/chobits/ngx_debug_pool
+```
+$ curl http://localhost:80/debug_pool
+..
+pid:1671
+size:      502312 num:           6 cnum:           1 lnum:          31 ngx_init_cycle
+size:           0 num:           1 cnum:           0 lnum:           0 ngx_http_spdy_keepalive_handler
+size:        1536 num:         195 cnum:           1 lnum:        1635 ngx_event_accept
+size:           0 num:          11 cnum:           0 lnum:           0 ngx_http_upstream_connect
+size:           0 num:           1 cnum:           0 lnum:           0 ngx_http_lua_create_fake_request
+size:           0 num:           1 cnum:           0 lnum:           0 main
+size:           0 num:           1 cnum:           0 lnum:           0 ngx_http_lua_create_fake_connection
+size:           0 num:           1 cnum:           0 lnum:           0 ngx_http_spdy_init
+size:           0 num:           3 cnum:           0 lnum:          18 ngx_http_server_names
+size:        8192 num:         810 cnum:           1 lnum:          11 ngx_http_create_request
+size:           0 num:           1 cnum:           0 lnum:           0 ngx_http_lua_init_worker
+size:       500KB num:        1031 cnum:           3 lnum:        1695 [SUMMARY]
+```
+Data
+====
+
+Every line except the last one of output content has the same format, as follows:
+
+"__size__: %12u __num__: %12u __cnum__: %12u __lnum__: %12u __\<function name\>__"
+
+* __size__: size of current used memory of this pool
+* __num__:  number of created pool (including current used pool and destroyed pool)
+* __cnum__: number of current used pool
+* __lnum__: number of calling ngx_palloc_large()
+  * If allocated memory is larger than predefined size of memory pool, nginx will allocate memory via malloc(ngx_alloc) in ngx_palloc_large().
+* __funcion name__: which nginx C function creates this pool
+  * With function name of pool creator, we can know memory usage of every module, for example:
+  * pool created by `ngx_http_create_request` is used for one HTTP request.
+    * Because most modules allocates memory from this pool directly, it's hard to distinguish between them.
+  * pool created by `ngx_event_accept` is used for TCP connection from client.
+  * pool created by `ngx_http_upstream_connect` is used for HTTP connection to upstream peer.
+  * pool created by `ngx_http_spdy_init` is used for SPDY session.
+    * This pool will be freed and recreated by `ngx_http_spdy_keepalive_handler` when spdy connection goes idle.
+  * pool created by `ngx_init_cycle` is used for parsing nginx configuration and keeping other global data structures.
+  * pool created by `ngx_http_lua_init_worker` is used for conf.temp_pool of directive [init_worker_by_lua](https://github.com/openresty/lua-nginx-module#init_worker_by_lua).
+  * ...
+
+Last line of output content summarizes the information of all memory pools.
