@@ -215,4 +215,12 @@ uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
     printf("pool_large: %p", $pool->large);
     printf("pool_cleanup: %p", $pool->cleanup);
 }'
+..
+{"type": "attached_probes", "data": {"probes": 1}}
+{"type": "printf", "data": "worker: 0"}
+{"type": "printf", "data": "free_connection_n: 0"}
+{"type": "printf", "data": "pool_max: 4095"}
+{"type": "printf", "data": "pool_current: 0x28da0b0"}
+{"type": "printf", "data": "pool_large: 0x2905a28"}
+{"type": "printf", "data": "pool_cleanup: 0x2900b30"}
 ```
