@@ -1,4 +1,4 @@
-# Java compilation
+# Java 24 build with debug and optimization
 ```shell
 bash configure --with-jvm-variants=server --enable-debug --enable-headless-only \
  --enable-warnings-as-errors --enable-dtrace --enable-jvm-feature-dtrace --with-num-cores=4 \
