@@ -21,7 +21,7 @@ bpftrace -l 'usdt:/opt/nginx/sbin/nginx:*' | wc -l
 - This function is called once per worker process at startup.
 - It initializes modules and sets up listening sockets.
 - Ensures the worker can handle incoming connections.
-### Using nm, readelf and bpftrace to find symbols
+### Using nm, readelf, objdump and bpftrace to find symbols
 #### nm
 ```
 nm /opt/nginx/sbin/nginx | grep ngx_worker_process_init
@@ -33,6 +33,12 @@ nm /opt/nginx/sbin/nginx | grep ngx_worker_process_init
 readelf -sW /opt/nginx/sbin/nginx | grep ngx_worker_process_init
 ..
    765: 000000000044faec  2385 FUNC    LOCAL  DEFAULT    7 ngx_worker_process_init
+```
+#### objdump
+```
+objdump -t /opt/nginx/sbin/nginx | grep ngx_worker_process_init
+..
+000000000044faec l     F .text  0000000000000951 ngx_worker_process_init
 ```
 #### bpftrace
 ```
