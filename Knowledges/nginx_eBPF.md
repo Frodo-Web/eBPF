@@ -153,6 +153,16 @@ sudo bpftrace -f json -e 'uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
 ..
 {"type": "attached_probes", "data": {"probes": 1}}
 ```
+OR just add '\n', bpftrace automatically flushes on newline
+```
+sudo bpftrace -e '
+uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
+    printf("Worker ID: %d\n", arg1);
+    usleep(100000);  // optional: give time for flush
+}'
+```
+Here arg1 is ngx_int_t worker
+
 Send sighup to master process of nginx
 ```
 kill -s SIGHUP 35102
@@ -161,3 +171,18 @@ The line will appear
 ```
 {"type": "printf", "data": "Worker ID: 0"}
 ```
+To access fields inside cycle:
+```
+ bpftrace -f json -e 'uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
+    printf("worker: %d", arg1);
+    printf("free_connection_n: %d", ((struct ngx_cycle_s *)arg0)->free_connection_n);
+}'
+..
+{"type": "attached_probes", "data": {"probes": 1}}
+{"type": "printf", "data": "worker: 0"}
+{"type": "printf", "data": "free_connection_n: 0"}
+```
+This works if your kernel supports CO-RE (BTF + BPF skeletons), or you're using usdt probes.
+
+Otherwise, needs to manually type offsets..
+
