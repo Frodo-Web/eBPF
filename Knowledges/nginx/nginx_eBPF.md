@@ -186,3 +186,33 @@ This works if your kernel supports CO-RE (BTF + BPF skeletons), or you're using 
 
 Otherwise, needs to manually type offsets..
 
+To access nested data, like ngx_cycle_s -> ngx_pool_s -> size_t (max), ngx_pool_t (current), ngx_pool_large_t (large), ngx_pool_cleanup_t (cleanup)
+```
+struct ngx_cycle_s {
+    ...
+    ngx_pool_t *pool;  // offset 8
+    ...
+};
+
+struct ngx_pool_s {
+        size_t                     max;                  /* offset 32
+        ngx_pool_t *               current;              /*    40     8 */
+        ngx_pool_large_t *         large;                /*    56     8 */
+        ngx_pool_cleanup_t *       cleanup;              /*    64     8 */
+};
+```
+We can build a query like this
+```
+sudo bpftrace -f json -e '
+uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
+    $cycle = (struct ngx_cycle_s *)arg0;
+    $pool = (struct ngx_pool_s *)$cycle->pool;
+
+    printf("worker: %d", arg1);
+    printf("free_connection_n: %llu", $cycle->free_connection_n);
+    printf("pool_max: %llu", $pool->max);
+    printf("pool_current: %p", $pool->current);
+    printf("pool_large: %p", $pool->large);
+    printf("pool_cleanup: %p", $pool->cleanup);
+}'
+```
