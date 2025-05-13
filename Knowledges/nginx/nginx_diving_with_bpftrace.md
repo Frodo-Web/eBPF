@@ -1,4 +1,4 @@
-# nginx eBPF
+# Nginx: Diving with bpftrace
 Nginx binary is builded statically, with_debug.
 
 Lets check what it has
