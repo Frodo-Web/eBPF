@@ -15,8 +15,7 @@ bpftrace -l 'usdt:/opt/nginx/sbin/nginx:*' | wc -l
 ..
 49
 ```
-
-## Main functions
+### Main functions
 ### ngx_worker_process_init
 - This function is called once per worker process at startup.
 - It initializes modules and sets up listening sockets.
@@ -146,4 +145,19 @@ struct ngx_cycle_s {
         /* size: 648, cachelines: 11, members: 34 */
         /* last cacheline: 8 bytes */
 };
+```
+### Check this out
+Attach to uprobe, note '-f json' so the output won't be bufferized (printed only when you press Ctrl + C)
+```
+sudo bpftrace -f json -e 'uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init { printf("Worker ID: %d", arg1); }'
+..
+{"type": "attached_probes", "data": {"probes": 1}}
+```
+Send sighup to master process of nginx
+```
+kill -s SIGHUP 35102
+```
+The line will appear
+```
+{"type": "printf", "data": "Worker ID: 0"}
 ```
