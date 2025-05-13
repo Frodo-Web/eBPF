@@ -20,6 +20,63 @@ bpftrace -l 'usdt:/opt/nginx/sbin/nginx:*' | wc -l
 - This function is called once per worker process at startup.
 - It initializes modules and sets up listening sockets.
 - Ensures the worker can handle incoming connections.
+### ngx_event_accept()
+- Triggered when a new TCP connection comes in on port 80 or 443.
+- Accepts the connection and adds it to the event loop.
+### ngx_http_init_request()
+- Called when the first HTTP data is read from the connection.
+- Initializes the HTTP request structure (ngx_http_request_t).
+- Parses headers and prepares for request processing.
+### ngx_http_core_run_phases()
+This is the main function that runs the HTTP request processing phases .
+
+It goes through various phases like:
+- NGX_HTTP_POST_READ_PHASE
+- NGX_HTTP_SERVER_REWRITE_PHASE
+- NGX_HTTP_FIND_CONFIG_PHASE (matches location block)
+- NGX_HTTP_REWRITE_PHASE
+- NGX_HTTP_POST_REWRITE_PHASE
+- NGX_HTTP_ACCESS_PHASE (checks access rules like allow/deny)
+- NGX_HTTP_CONTENT_PHASE → This is where content gets generated!
+### ngx_http_static_handler()
+If the request matches a static file (like /index.html) and no rewrite/proxy rules apply, this handler is used.
+
+This function:
+- Checks if the file exists using ngx_open_file() or equivalent system calls.
+- Sets proper MIME type based on extension (e.g., text/html).
+- Sends HTTP headers via ngx_http_send_header().
+- Sends the file body using ngx_http_send_special() and ngx_http_output_filter().
+
+### ngx_http_send_header()
+Sends the HTTP response headers to the client.
+
+Includes things like:
+- Content-Type: text/html
+- Content-Length
+- Last-Modified
+- ETag (if enabled)
+
+### ngx_http_send_response() / ngx_http_output_filter()
+- Handles sending the actual file content.
+- Uses efficient mechanisms like sendfile() (on Linux) or aio (for asynchronous I/O) depending on config.
+- Buffers output if needed.
+
+### ngx_http_finalize_request()
+- Cleans up the request after completion.
+- Closes file handles and logs access (via ngx_http_log_request()).
+
+### Relevant files:
+- src/http/ngx_http_core_module.c – Core request handling
+- src/http/modules/ngx_http_static_module.c – Static file handler
+- src/http/ngx_http_request.c – Main request lifecycle functions
+```
+location / {
+    root /usr/share/nginx/html;
+}
+```
+This maps the URI /index.html to the filesystem path /usr/share/nginx/html/index.html.
+
+Internally, Nginx uses ngx_http_map_uri_to_path() to resolve this.
 ### Using nm, readelf, objdump and bpftrace to find symbols
 #### nm
 ```
