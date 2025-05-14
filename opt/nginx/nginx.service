@@ -1,0 +1,10 @@
+[Unit]
+Description=Nginx
+
+[Service]
+User=frodo
+Type=forking
+ExecStart=/opt/nginx/sbin/nginx -p /opt/nginx -c /opt/nginx/etc/nginx.conf
+
+[Install]
+WantedBy=multi-user.target
