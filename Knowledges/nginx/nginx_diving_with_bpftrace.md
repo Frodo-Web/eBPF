@@ -321,6 +321,23 @@ uprobe:/opt/nginx/sbin/nginx:ngx_event_accept
     ngx_event_t * ev
 ```
 ```
+readelf -wi /opt/nginx/sbin/nginx | less
+..
+ <1><39d0b>: Abbrev Number: 2 (DW_TAG_typedef)
+    <39d0c>   DW_AT_name        : (indirect string, offset: 0x58c): ngx_event_t
+    <39d10>   DW_AT_decl_file   : 21
+    <39d11>   DW_AT_decl_line   : 24
+    <39d12>   DW_AT_decl_column : 38
+    <39d13>   DW_AT_type        : <0x39d17>
+ <1><39d17>: Abbrev Number: 7 (DW_TAG_structure_type)
+    <39d18>   DW_AT_name        : (indirect string, offset: 0x313): ngx_event_s
+    <39d1c>   DW_AT_byte_size   : 96
+    <39d1d>   DW_AT_decl_file   : 29
+    <39d1e>   DW_AT_decl_line   : 30
+    <39d1f>   DW_AT_decl_column : 8
+    <39d1f>   DW_AT_sibling     : <0x39e5e>
+```
+```
 pahole /opt/nginx/sbin/nginx | less
 ..
 struct ngx_event_s {
