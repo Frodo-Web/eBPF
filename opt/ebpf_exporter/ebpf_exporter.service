@@ -1,0 +1,10 @@
+[Unit]
+Description=eBPF Exporter
+
+[Service]
+User=root
+Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+ExecStart=/opt/ebpf_exporter/ebpf_exporter --config.dir=/opt/ebpf_exporter/examples --config.names=biolatency,bio-trace,exec-trace
+
+[Install]
+WantedBy=multi-user.target
