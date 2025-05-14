@@ -379,3 +379,22 @@ struct ngx_event_s {
         /* last cacheline: 32 bytes */
 };
 ```
+```
+readelf -wi /opt/nginx/sbin/nginx | less
+pahole /opt/nginx/sbin/nginx | less
+..
+struct ngx_queue_s {
+        ngx_queue_t *              prev;                 /*     0     8 */
+        ngx_queue_t *              next;                 /*     8     8 */
+
+        /* size: 16, cachelines: 1, members: 2 */
+        /* last cacheline: 16 bytes */
+};
+```
+```
+bpftrace -f json -e 'uprobe:/opt/nginx/sbin/nginx:ngx_event_accept { printf("ngx_event_accept triggered"); $event = (struct ngx_event_s *)arg0; $queue = $event->queue; printf("prev: %p, next: %p", $queue.prev, $queue.next);}'
+..
+{"type": "attached_probes", "data": {"probes": 1}}
+{"type": "printf", "data": "ngx_event_accept triggered"}
+{"type": "printf", "data": "prev: (nil), next: (nil)"}
+```
