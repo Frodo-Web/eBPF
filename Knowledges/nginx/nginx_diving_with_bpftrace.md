@@ -108,6 +108,33 @@ uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init
     ngx_cycle_t * cycle
     ngx_int_t worker
 ```
+### Find out typedef references
+For example we don't have access to the source code, and want to figure out to what structure ngx_queue_t references, implying:
+```
+typedef struct ngx_queue_s  ngx_queue_t;
+
+struct ngx_queue_s {
+    ngx_queue_t  *prev;
+    ngx_queue_t  *next;
+};
+```
+readelf tool can help with that
+```
+readelf -wi /opt/nginx/sbin/nginx
+```
+Look for something like
+```
+<some_offset> DW_TAG_typedef
+              DW_AT_name        "ngx_queue_t"
+              DW_AT_type        <offset to struct ngx_queue_s>
+              ...
+```
+And also
+```
+<other_offset> DW_TAG_structure_type
+                 DW_AT_name        "ngx_queue_s"
+```
+This tells you that ngx_queue_t is just an alias (typedef) for struct ngx_queue_s.
 ### Using pahole and gdb to read structures
 #### GDB
 ```
