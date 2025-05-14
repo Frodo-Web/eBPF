@@ -281,3 +281,57 @@ uprobe:/opt/nginx/sbin/nginx:ngx_worker_process_init {
 {"type": "printf", "data": "pool_large: 0x2905a28"}
 {"type": "printf", "data": "pool_cleanup: 0x2900b30"}
 ```
+### Other functions
+```
+objdump -t /opt/nginx/sbin/nginx | grep event_accept
+..
+0000000000000000 l    df *ABS*  0000000000000000 ngx_event_accept.c
+0000000000441889 g     F .text  0000000000000bd0 ngx_event_accept
+
+bpftrace -lv '*:/opt/nginx/sbin/nginx:ngx_event_accept'
+..
+uprobe:/opt/nginx/sbin/nginx:ngx_event_accept
+    ngx_event_t * ev
+```
+```
+pahole /opt/nginx/sbin/nginx | less
+..
+struct ngx_event_s {
+        void *                     data;                 /*     0     8 */
+        unsigned int               write:1;              /*     8: 0  4 */
+        unsigned int               accept:1;             /*     8: 1  4 */
+        unsigned int               instance:1;           /*     8: 2  4 */
+        unsigned int               active:1;             /*     8: 3  4 */
+        unsigned int               disabled:1;           /*     8: 4  4 */
+        unsigned int               ready:1;              /*     8: 5  4 */
+        unsigned int               oneshot:1;            /*     8: 6  4 */
+        unsigned int               complete:1;           /*     8: 7  4 */
+        unsigned int               eof:1;                /*     8: 8  4 */
+        unsigned int               error:1;              /*     8: 9  4 */
+        unsigned int               timedout:1;           /*     8:10  4 */
+        unsigned int               timer_set:1;          /*     8:11  4 */
+        unsigned int               delayed:1;            /*     8:12  4 */
+        unsigned int               deferred_accept:1;    /*     8:13  4 */
+        unsigned int               pending_eof:1;        /*     8:14  4 */
+        unsigned int               posted:1;             /*     8:15  4 */
+        unsigned int               closed:1;             /*     8:16  4 */
+        unsigned int               channel:1;            /*     8:17  4 */
+        unsigned int               resolver:1;           /*     8:18  4 */
+        unsigned int               cancelable:1;         /*     8:19  4 */
+
+        /* XXX 12 bits hole, try to pack */
+
+        int                        available;            /*    12     4 */
+        ngx_event_handler_pt       handler;              /*    16     8 */
+        ngx_uint_t                 index;                /*    24     8 */
+        ngx_log_t *                log;                  /*    32     8 */
+        ngx_rbtree_node_t          timer;                /*    40    40 */
+        /* --- cacheline 1 boundary (64 bytes) was 16 bytes ago --- */
+        ngx_queue_t                queue;                /*    80    16 */
+
+        /* size: 96, cachelines: 2, members: 27 */
+        /* sum members: 92 */
+        /* sum bitfield members: 20 bits, bit holes: 1, sum bit holes: 12 bits */
+        /* last cacheline: 32 bytes */
+};
+```
