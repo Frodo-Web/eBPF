@@ -1,21 +1,45 @@
+otelcol.receiver.otlp "otlp_receiver" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.grafanacloud.input,]
+  }
+}
 prometheus.scrape "default" {
   targets = [
     {"__address__" = "localhost:9100", "job" = "node_exporter"},
-    // Add more scrape targets as needed
+    {"__address__" = "localhost:9435", "job" = "ebpf_exporter"},
   ]
 
   forward_to = [prometheus.remote_write.default.receiver]
-  scrape_interval = "30s"
+  scrape_interval = "60s"
 }
 
 prometheus.remote_write "default" {
   endpoint {
-    url = "https://prometheus-prod-$PROM_ID-prod-eu-north-0.grafana.net/api/prom/push"
+    url = "https://prometheus-prod-PROMETHEUS_ID-prod-eu-north-0.grafana.net/api/prom/push"
 
     // Optional basic authentication
     basic_auth {
-      username = "$USER"
-      password = "$SECRET"
+      username = "USER"
+      password = "PASSWORD"
     }
   }
+}
+
+otelcol.exporter.otlp "grafanacloud" {
+  client {
+    endpoint = "tempo-prod-TEMPO_ID-prod-eu-north-0.grafana.net:443"
+    auth = otelcol.auth.basic.grafanacloud.handler
+  }
+}
+
+otelcol.auth.basic "grafanacloud" {
+  username = "USER"
+  password = "PASSWORD"
 }
