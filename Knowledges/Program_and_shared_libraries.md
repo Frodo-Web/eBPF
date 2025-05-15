@@ -1,4 +1,4 @@
-# Program and eBPF (user space)
+# Program and shared libraries at user space
 ## 📚 Shared libraries
 libc.so.6, libpthread.so.0, and libm.so.6 are shared libraries provided by glibc (GNU C library).
 | Library | Purpose | Example Functions | Description of Functions | Languages That Use It |
