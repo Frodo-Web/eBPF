@@ -6,6 +6,10 @@ This attaches to every malloc() call executed by any application that uses libc.
 SEC("uprobe/libc.so.6:malloc")
 ```
 This only works for dynamically linked binaries that use libc.so.6. If the program is statically linked to its own libc, it won't work until you specify the program itself.
+
+This works because the Linux kernel’s uprobe mechanism can resolve sonames (shared object names), like libc.so.6, based on where they’re mapped in memory, so you don't need to specify full path.
+
+
 ## Program Languages and shared libraries
 ### Python
 ```
@@ -37,9 +41,26 @@ nm -D /usr/bin/python3 | grep malloc
 00000000004f960d T PyInit__tracemalloc
                  U malloc@GLIBC_2.2.5
 ```
+This tells perf to attach a user-space probe (uprobe) at the symbol malloc inside /usr/bin/python3.
+```
+sudo perf probe -x /usr/bin/python3 malloc
+```
+- Python may have its own internal symbol named malloc, perhaps for wrapping or debugging.
+- Or it could be a PLT (Procedure Linkage Table) stub , which is how calls to malloc are resolved dynamically when calling into libc.
+- But this is NOT the actual malloc implementation — that lives in libc.so.6.
 ### Go
 ```
 file /lib/go-1.22/bin/go
 ..
 /lib/go-1.22/bin/go: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=NaY_ztiU3LVZa2ji7gGb/BVafZ6p0TFQDhlr26dey/GDhy7NgRyoIxk9Nb4BU_/OzCYuwTwGmoJDQmAoNlQ, stripped
 ```
+### What languages also use libc?
+- Ruby (All memory allocations, threads, and syscalls go through libc)
+- PHP
+- Perl
+- Python/
+- Node.js / Javascript (V8)
+- Rust (But you can build no_std binaries that avoid libc, The musl target allows statically linking with musl, a lightweight libc alternative)
+- C/C++ (untill syscalls explicitly specified)
+### What languages don't use libc?
+- Golang (You usually get a static binary, Go runtime makes direct syscalls instead of going through libc, Go also has its own memory allocator and scheduler. But seems like its possible to build goland with shared libc or musl)
