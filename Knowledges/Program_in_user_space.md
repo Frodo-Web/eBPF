@@ -1,13 +1,12 @@
 # Program and eBPF (user space)
 
-## uprobes
-
+## uprobes and shared libraries
+This attaches to every malloc() call executed by any application that uses libc.so.6. 
 ```
 SEC("uprobe/libc.so.6:malloc")
 ```
 This only works for dynamically linked binaries that use libc.so.6. If the program is statically linked to its own libc, it won't work until you specify the program itself.
-
-## Program Languages
+## Program Languages and shared libraries
 ### Python
 ```
 ldd /usr/bin/python3
