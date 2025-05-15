@@ -7,7 +7,7 @@ SEC("uprobe/libc.so.6:malloc")
 ```
 This only works for dynamically linked binaries that use libc.so.6. If the program is statically linked to its own libc, it won't work until you specify the program itself.
 
-
+## Program Languages
 ### Python
 ```
 ldd /usr/bin/python3
