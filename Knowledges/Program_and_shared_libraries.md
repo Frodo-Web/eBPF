@@ -79,6 +79,18 @@ file /lib/go-1.22/bin/go
 ..
 /lib/go-1.22/bin/go: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=NaY_ztiU3LVZa2ji7gGb/BVafZ6p0TFQDhlr26dey/GDhy7NgRyoIxk9Nb4BU_/OzCYuwTwGmoJDQmAoNlQ, stripped
 ```
+### Find out static libraries
+There are some tracks of libc in golang though
+```
+strings  /lib/go-1.22/bin/go | grep -i 'GLIBC\|openssl\|libcrypto\|libc\|pthread'
+...
+*macho.DylibCmd
+*runtime.libcall
+...
+cmd/go/internal/bug.printGlibcVersion
+cmd/go/internal/bug.printGlibcVersion.deferwrap2
+cmd/go/internal/bug.printGlibcVersion.deferwrap1
+```
 ### What languages also use libc?
 - Java (fork() calls at least)
 - Ruby (All memory allocations, threads, and syscalls go through libc)
