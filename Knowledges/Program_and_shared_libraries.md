@@ -1,4 +1,5 @@
 # Program and shared libraries at user space
+## Shared libraries are not shared when they statically linked
 ## 📚 Shared libraries
 libc.so.6, libpthread.so.0, and libm.so.6 are shared libraries provided by glibc (GNU C library).
 | Library | Purpose | Example Functions | Description of Functions | Languages That Use It |
@@ -34,8 +35,6 @@ SEC("uprobe/libc.so.6:malloc")
 This only works for dynamically linked binaries that use libc.so.6. If the program is statically linked to its own libc, it won't work until you specify the program itself.
 
 This works because the Linux kernel’s uprobe mechanism can resolve sonames (shared object names), like libc.so.6, based on where they’re mapped in memory, so you don't need to specify full path.
-
-
 ## Program Languages and shared libraries
 ### Python
 ```
