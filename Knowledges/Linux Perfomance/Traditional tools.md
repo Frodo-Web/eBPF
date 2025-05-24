@@ -78,3 +78,28 @@ perf report
 ```
 ![image](https://github.com/user-attachments/assets/d48affe5-392c-4919-9c66-e43d8de25a0f)
 ![image](https://github.com/user-attachments/assets/1133d500-78c9-45b6-91c7-2cf89890e7af)
+## ftrace
+ftrace is a tracing mechanism built directly into the Linux kernel. It helps trace kernel-level function calls, latencies, interrupts, scheduling, etc.
+- Low overhead
+- Good for deep kernel debugging
+- Accessed through the debugfs filesystem (/debug/tracing)
+```
+mount -t debugfs none /debug
+..
+mount: /debug: mount point does not exist.
+
+mkdir /debug
+mount -t debugfs none /debug
+ls /debug/
+..
+acpi              devices_deferred  fault_around_bytes  mei_wdt                regulator         ttm
+bdi               dma_buf           gpio                multigrain_timestamps  sched             usb
+block             dma_pools         hid                 opp                    slab              wakeup_sources
+cec               dmaengine         i2c                 phy                    sleep_time        x86
+check_wx_pages    dri               intel_lpss          pinctrl                split_huge_pages  xfs
+clear_warn_once   dynamic_debug     intel_powerclamp    pkg_temp_thermal       stackdepot        zsmalloc
+clk               eeepc-wmi         kprobes             pm_genpd               suspend_stats
+cxl               energy_model      kvm                 pwm                    swiotlb
+devfreq           error_injection   mce                 ras                    thunderbolt
+device_component  extfrag           mei0                regmap                 tracing
+```
