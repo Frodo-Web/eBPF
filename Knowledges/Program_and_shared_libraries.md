@@ -37,6 +37,7 @@ This only works for dynamically linked binaries that use libc.so.6. If the progr
 This works because the Linux kernel’s uprobe mechanism can resolve sonames (shared object names), like libc.so.6, based on where they’re mapped in memory, so you don't need to specify full path.
 ## Program Languages and shared libraries
 ### Python
+ldd - print shared object dependencies
 ```
 ldd /usr/bin/python3
 ..
