@@ -128,3 +128,163 @@ tail -n 100000 /debug/tracing/trace | grep tail | head -n 15
             tail-4499    [002] d....  3111.299017: preempt_count_add <-_raw_spin_lock
             tail-4499    [002] d..1.  3111.299017: _raw_spin_unlock <-ring_buffer_empty_cpu.part.0.isra.0
 ```
+### Select only specific functions
+```
+cat /debug/tracing/set_ftrace_filter
+..
+#### all functions enabled ####
+
+cat /debug/tracing/trace | tail -n 20000 | less
+..
+ ebpf_exporter-715     [002] .....  3658.180704: schedule <-futex_wait_queue
+   ebpf_exporter-722     [000] .....  3658.180717: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-722     [000] .....  3658.180741: schedule <-do_nanosleep
+   ebpf_exporter-715     [002] .....  3658.180750: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-807     [001] .....  3658.180798: schedule <-futex_wait_queue
+   ebpf_exporter-722     [000] .....  3658.180798: schedule <-futex_wait_queue
+   ebpf_exporter-722     [000] .....  3658.180824: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-807     [001] .....  3658.180858: schedule <-do_nanosleep
+   ebpf_exporter-701     [000] .....  3658.180871: schedule <-do_nanosleep
+   ebpf_exporter-715     [002] .....  3658.180876: schedule <-futex_wait_queue
+   ebpf_exporter-722     [000] .....  3658.180878: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-807     [002] .....  3658.180929: schedule <-futex_wait_queue
+ systemd-journal-520     [001] .....  3658.181113: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-701     [000] .....  3658.182206: schedule <-futex_wait_queue
+     rcu_preempt-18      [003] .....  3658.184726: schedule <-schedule_timeout
+     rcu_preempt-18      [003] .....  3658.188726: schedule <-schedule_timeout
+     rcu_preempt-18      [003] .....  3658.192725: schedule <-schedule_timeout
+     rcu_preempt-18      [003] .....  3658.196725: schedule <-rcu_gp_kthread
+   ebpf_exporter-748     [001] .....  3658.221111: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-701     [000] .....  3658.221132: schedule <-do_nanosleep
+   ebpf_exporter-670     [002] .....  3658.221150: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-701     [000] .....  3658.221207: schedule <-do_nanosleep
+   ebpf_exporter-701     [000] .....  3658.221281: schedule <-futex_wait_queue
+   ebpf_exporter-750     [003] .....  3658.222701: schedule <-schedule_hrtimeout_range_clock
+   ebpf_exporter-701     [000] .....  3658.222722: schedule <-do_nanosleep
+   ebpf_exporter-701     [000] .....  3658.222798: schedule <-futex_wait_queue
+      kcompactd0-52      [003] .....  3658.225717: schedule <-schedule_timeout
+   kworker/u16:2-44      [001] .....  3658.337723: schedule <-worker_thread
+   kworker/u16:0-4517    [002] .....  3658.337738: schedule <-worker_thread
+```
+#### Question: Why do I see alot of these calls?
+```
+cat /debug/tracing/trace | tail -n 20000 | head -n 100
+..
+            tail-4541    [000] .....  3673.663321: schedule <-pipe_read
+            tail-4541    [000] .....  3673.663407: schedule <-pipe_read
+            tail-4541    [000] .....  3673.663493: schedule <-pipe_read
+            tail-4541    [000] .....  3673.663579: schedule <-pipe_read
+            tail-4541    [000] .....  3673.663664: schedule <-pipe_read
+```
+You're seeing a lot of schedule function calls in the context of pipe_read when tracing the scheduler with ftrace. This is normal and expected behavior, especially if the process is waiting on data from a pipe (e.g., stdin or inter-process communication) .
+- The process tail-4541 was running.
+- It called pipe_read() — which means it's trying to read from a pipe.
+- There was no data available to read at that moment.
+- So it called schedule() to voluntarily give up the CPU and wait for data to arrive.
+- Later, when data becomes available, the kernel will wake up this task and it will run again.
+### Trace scheduling latency
+```
+??? echo "" > /debug/tracing/set_ftrace_filter (Should I set to all before that?)
+echo wakeup > /debug/tracing/current_tracer
+..
+cat /debug/tracing/trace
+# tracer: wakeup
+#
+# wakeup latency trace v1.1.5 on 6.14.6-1.el9.elrepo.x86_64
+# --------------------------------------------------------------------
+# latency: 18 us, #6/6, CPU#0 | (M:desktop VP:0, KP:0, SP:0 HP:0 #P:4)
+#    -----------------
+#    | task: migration/0-21 (uid:0 nice:0 policy:1 rt_prio:99)
+#    -----------------
+#
+#                    _------=> CPU#
+#                   / _-----=> irqs-off/BH-disabled
+#                  | / _----=> need-resched
+#                  || / _---=> hardirq/softirq
+#                  ||| / _--=> preempt-depth
+#                  |||| / _-=> migrate-disable
+#                  ||||| /     delay
+#  cmd     pid     |||||| time  |   caller
+#     \   /        ||||||  \    |    /
+  <idle>-0         0dNh6.    0us+:        0:120:R   + [000]      21:  0:R migration/0
+  <idle>-0         0dNh6.   13us : <stack trace>
+ => __ftrace_trace_stack
+ => probe_wakeup
+ => ttwu_do_activate
+ => try_to_wake_up
+ => wake_up_q
+ => cpu_stop_queue_work
+ => watchdog_timer_fn
+ => __hrtimer_run_queues
+ => hrtimer_interrupt
+ => __sysvec_apic_timer_interrupt
+ => sysvec_apic_timer_interrupt
+ => asm_sysvec_apic_timer_interrupt
+ => cpuidle_enter_state
+ => cpuidle_enter
+ => cpuidle_idle_call
+ => do_idle
+ => cpu_startup_entry
+ => rest_init
+ => start_kernel
+ => x86_64_start_reservations
+ => x86_64_start_kernel
+ => common_startup_64
+  <idle>-0         0dNh6.   13us : 0
+  <idle>-0         0d..3.   16us : __schedule
+  <idle>-0         0d..3.   17us :        0:120:R ==> [000]      21:  0:R migration/0
+  <idle>-0         0d..3.   19us : <stack trace>
+ => __ftrace_trace_stack
+ => probe_wakeup_sched_switch.part.0
+ => __schedule
+ => schedule_idle
+ => do_idle
+ => cpu_startup_entry
+ => rest_init
+ => start_kernel
+ => x86_64_start_reservations
+ => x86_64_start_kernel
+ => common_startup_64
+```
+### See available tracers
+```
+cat /debug/tracing/available_tracers
+..
+timerlat osnoise hwlat blk function_graph wakeup_dl wakeup_rt wakeup function nop
+```
+```
+echo "" > /debug/tracing/set_ftrace_filter
+cat /debug/tracing/set_ftrace_filter
+..
+#### all functions enabled ####
+
+cat /debug/tracing/trace
+..
+# tracer: hwlat
+#
+# entries-in-buffer/entries-written: 55/55   #P:4
+#
+#                                _-----=> irqs-off/BH-disabled
+#                               / _----=> need-resched
+#                              | / _---=> hardirq/softirq
+#                              || / _--=> preempt-depth
+#                              ||| / _-=> migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+           <...>-4603    [002] d....  5530.226260: #1     inner/outer(us):   13/13    ts:1748106483.610950304 count:2
+           <...>-4603    [000] d....  5532.242255: #2     inner/outer(us):   17/10    ts:1748106486.059681953 count:1
+           <...>-4603    [000] d....  5536.274311: #3     inner/outer(us):   11/10    ts:1748106490.065228713 count:1
+           <...>-4603    [003] d....  5539.298336: #4     inner/outer(us):   13/26    ts:1748106492.809430691 count:10
+           <...>-4603    [000] d....  5548.370464: #5     inner/outer(us):   17/9     ts:1748106502.059683554 count:1
+           <...>-4603    [001] d....  5549.378468: #6     inner/outer(us):   36/15    ts:1748106503.214885660 count:33
+           <...>-4603    [000] dn...  5552.402487: #7     inner/outer(us):   12/10    ts:1748106506.059724147 count:2
+           <...>-4603    [002] d....  5554.418519: #8     inner/outer(us):   12/12    ts:1748106508.135728165 count:4
+           <...>-4603    [003] d....  5555.426537: #9     inner/outer(us):   10/14    ts:1748106509.261875907 count:1
+           <...>-4603    [000] d....  5556.434544: #10    inner/outer(us):   14/13    ts:1748106510.023729201 count:2 nmi-total:3 nmi-count:1
+           <...>-4603    [001] d....  5557.442546: #11    inner/outer(us):    9/14    ts:1748106510.952476714 count:1 nmi-total:2 nmi-count:1
+           <...>-4603    [002] d....  5558.450585: #12    inner/outer(us):   13/14    ts:1748106511.931331902 count:11
+           <...>-4603    [003] d....  5559.458578: #13    inner/outer(us):   16/26    ts:1748106513.223770215 count:112
+           <...>-4603    [000] d....  5560.466586: #14    inner/outer(us):   16/9     ts:1748106514.059683069 count:1
+           <...>-4603    [001] d....  5561.474613: #15    inner/outer(us):   10/16    ts:1748106514.984476011 count:3
+```
