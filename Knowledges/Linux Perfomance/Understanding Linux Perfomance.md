@@ -9,11 +9,13 @@ App syscalls, page cache, block layer, device drivers, physical disk
 Scheduler types:
 
   Classic:
+  
     - Noop
     - Deadline
     - CFQ
     
   Multiple queue:
+  
     - None
     - BFQ
     - mq-deadline
