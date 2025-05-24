@@ -84,3 +84,11 @@ Lessons learned, post mortem и другие документы – фиксац
 6. Отслеживаем выполнение установленных нами SLO для соответствующих SLIs во времени.
 
 7. Оцениваем результаты внедрения SLI SLO, как и с любым процессом, следующим логике Plan-Do-Check-Act. Лучше начать с небольшого количества SLO, определить достижимые цели, научиться отслеживать показатели и проводить улучшения постепенно.
+## Interviews
+Use the STAR method (Situation, Task, Action, Result).
+
+Be ready to answer:
+- Tell me about a time you automated something.
+- Describe a system failure you encountered and how you handled it.
+- How do you handle high-pressure situations?
+- Have you ever disagreed with a developer over reliability?
