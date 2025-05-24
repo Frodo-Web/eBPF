@@ -44,6 +44,15 @@ perf -h
    lock            Analyze lock events
    sched           Tool to trace/measure scheduler properties (latencies)
    timechart       Tool to visualize total system behavior during a workload
+
+perf sched -h
+..
+ Usage: perf sched [<options>] {record|latency|map|replay|script|timehist}
+
+    -D, --dump-raw-trace  dump raw trace in ASCII
+    -f, --force           don't complain, do it
+    -i, --input <file>    input file name
+    -v, --verbose         be more verbose (show symbol address, etc)
 ```
 ### Profile an application
 ```
@@ -62,3 +71,10 @@ perf stat -e cycles,instructions sleep 5
 ```
 perf trace -p <PID>
 ```
+### Trace scheduler
+```
+perf sched record
+perf report
+```
+![image](https://github.com/user-attachments/assets/d48affe5-392c-4919-9c66-e43d8de25a0f)
+![image](https://github.com/user-attachments/assets/1133d500-78c9-45b6-91c7-2cf89890e7af)
