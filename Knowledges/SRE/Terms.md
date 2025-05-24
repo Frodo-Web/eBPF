@@ -1,6 +1,14 @@
 # SRE Terms
 ## Core Principes of SRE
-SRE - это эксплуатация систем, приложений с разработкой их наблюдаемости анализом производительности и работой над ошибками. Разработка принципов и планов по улучшению пользовательского опыта в плане отзывчивости и безошибочной работы системы. 
+SRE - это эксплуатация систем, приложений с разработкой их наблюдаемости анализом производительности и работой над ошибками. Разработка принципов и планов по улучшению пользовательского опыта в плане отзывчивости и безошибочной работы системы.
+- Automation : Automate repetitive tasks (e.g., deployments, scaling, incident responses).
+- Monitoring & Observability : Track system health and performance.
+- Service Level Objectives (SLOs), Service Level Indicators (SLIs), and Service Level Agreements (SLAs) : Define acceptable reliability targets.
+- Error Budgets : Allow for innovation while maintaining reliability.
+- Incident Management & Postmortems : Learn from failures and improve systems.
+- Release Engineering : Safe and efficient deployment practices (canary releases, blue/green deploys).
+- Capacity Planning : Ensure systems scale properly under load.
+- Collaboration between Dev & Ops : Break down silos; promote shared ownership of services.
 ## SLI, SLO, SLA, Error Budget
 ### Service Level Indicator (SLI)
 ```
