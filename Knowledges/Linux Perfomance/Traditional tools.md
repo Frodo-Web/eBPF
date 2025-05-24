@@ -288,3 +288,88 @@ cat /debug/tracing/trace
            <...>-4603    [000] d....  5560.466586: #14    inner/outer(us):   16/9     ts:1748106514.059683069 count:1
            <...>-4603    [001] d....  5561.474613: #15    inner/outer(us):   10/16    ts:1748106514.984476011 count:3
 ```
+## ltrace
+Great! ltrace is a dynamic tracing tool for Linux that intercepts and records dynamic library calls made by a program, along with the arguments passed and return values.
+
+It's similar to strace, but instead of focusing on system calls , ltrace focuses on library function calls (like those from libc, libm, or any shared libraries used by the program).
+
+Useful for:
+- Reverse engineering
+- Debugging crashes
+- Understanding how a binary works
+```
+ltrace ls
+..
+strrchr("ls", '/')                                                        = nil
+setlocale(LC_ALL, "")                                                     = "C.UTF-8"
+bindtextdomain("coreutils", "/usr/share/locale")                          = "/usr/share/locale"
+textdomain("coreutils")                                                   = "coreutils"
+__cxa_atexit(0x556c51e25b10, 0, 0x556c51e3af80, 0)                        = 0
+isatty(1)                                                                 = 1
+getenv("QUOTING_STYLE")                                                   = nil
+getenv("COLUMNS")                                                         = nil
+ioctl(1, 21523, 0x7fff1c11d6d0)                                           = 0
+getenv("TABSIZE")                                                         = nil
+getopt_long(1, 0x7fff1c11d838, "abcdfghiklmnopqrstuvw:xABCDFGHI:"..., 0x556c51e3b360, -1) = -1
+getenv("LS_BLOCK_SIZE")                                                   = nil
+getenv("BLOCK_SIZE")                                                      = nil
+getenv("BLOCKSIZE")                                                       = nil
+getenv("POSIXLY_CORRECT")                                                 = nil
+getenv("BLOCK_SIZE")                                                      = nil
+__errno_location()                                                        = 0x7f7d072cfae0
+malloc(56)                                                                = 0x556c5bac2bb0
+__errno_location()                                                        = 0x7f7d072cfae0
+malloc(56)                                                                = 0x556c5bac2bf0
+getenv("TZ")                                                              = nil
+malloc(128)                                                               = 0x556c5bac2c30
+malloc(20000)                                                             = 0x556c5bac2cc0
+malloc(32)                                                                = 0x556c5bac7af0
+strlen(".")                                                               = 1
+malloc(2)                                                                 = 0x556c5bac7b20
+memcpy(0x556c5bac7b20, ".\0", 2)                                          = 0x556c5bac7b20
+__errno_location()                                                        = 0x7f7d072cfae0
+opendir(".")                                                              = { 3 }
+readdir({ 3 })                                                            = { 9571630, "nginx" }
+__errno_location()                                                        = 0x7f7d072cfae0
+__ctype_get_mb_cur_max()                                                  = 6
+strlen("nginx")                                                           = 5
+strlen("nginx")                                                           = 5
+malloc(6)                                                                 = 0x556c5bacfb80
+memcpy(0x556c5bacfb80, "nginx\0", 6)                                      = 0x556c5bacfb80
+readdir({ 3 })                                                            = { 9571672, "perf.data.old" }
+__errno_location()                                                        = 0x7f7d072cfae0
+__ctype_get_mb_cur_max()                                                  = 6
+strlen("perf.data.old")                                                   = 13
+strlen("perf.data.old")                                                   = 13
+malloc(14)                                                                = 0x556c5bacfba0
+memcpy(0x556c5bacfba0, "perf.data.old\0", 14)                             = 0x556c5bacfba0
+readdir({ 3 })                                                            = { 9568262, "node_exporter-1.9.1.linux-amd64" }
+```
+You can trace specific function names, specific pids, apply specific filters etc...
+### Follow forked process and print timestamps
+```
+ltrace -tt -f ping google.com
+..
+[pid 4829] 20:38:34.695151 strncpy(0x7ffe33333e10, "google.com", 1024)    = 0x7ffe33333e10
+[pid 4829] 20:38:34.695290 socket(2, 2, 0)                                = 5
+[pid 4829] 20:38:34.695429 connect(5, 0x7ffe33333dd0, 16, 0x7f3f5bd0f6cb) = 0
+[pid 4829] 20:38:34.695571 getsockname(5, 0x7ffe3333662c, 0x7ffe33333db4, 0x7f3f5bd0f087) = 0
+[pid 4829] 20:38:34.695712 close(5)                                       = 0
+[pid 4829] 20:38:34.695835 setsockopt(3, 0, 11, 0x7ffe33333db4)           = 0
+```
+### Count how often functions are called (also sumarizes time spent)
+```
+ltrace -c ls
+..
+% time     seconds  usecs/call     calls      function
+------ ----------- ----------- --------- --------------------
+ 17.69    0.002681          40        66 strlen
+ 16.33    0.002475          38        65 __ctype_get_mb_cur_max
+ 12.33    0.001869          38        49 __errno_location
+  9.38    0.001422          41        34 __overflow
+  8.25    0.001250          37        33 strcoll
+  7.99    0.001211        1211         1 setlocale
+  5.30    0.000804          38        21 malloc
+  4.22    0.000640          40        16 readdir
+  4.18    0.000633          37        17 memcpy
+```
