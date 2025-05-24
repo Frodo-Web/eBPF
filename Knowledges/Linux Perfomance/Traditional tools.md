@@ -103,3 +103,28 @@ cxl               energy_model      kvm                 pwm                    s
 devfreq           error_injection   mce                 ras                    thunderbolt
 device_component  extfrag           mei0                regmap                 tracing
 ```
+### Enable function tracing
+```
+cat /debug/tracing/trace
+..
+# tracer: nop
+
+echo function > /debug/tracing/current_tracer
+tail -n 100000 /debug/tracing/trace | grep tail | head -n 15
+..
+            grep-4500    [003] .....  3110.578235: free_tail_page_prepare <-free_frozen_pages
+            head-4501    [001] .....  3110.579528: free_tail_page_prepare <-free_frozen_pages
+            tail-4499    [002] .....  3110.587621: get_symbol_offset <-kallsyms_lookup_buildid
+            tail-4499    [002] ...1.  3111.167456: preempt_count_sub <-_raw_spin_unlock_irqrestore
+            tail-4499    [002] d....  3111.271392: preempt_count_add <-_raw_spin_lock
+            tail-4499    [002] .....  3111.293579: mutex_unlock <-seq_read_iter
+            tail-4499    [002] d..1.  3111.299016: _raw_spin_unlock <-ring_buffer_empty_cpu.part.0.isra.0
+            tail-4499    [002] d..1.  3111.299016: preempt_count_sub <-_raw_spin_unlock
+            tail-4499    [002] .....  3111.299016: _raw_spin_lock_irqsave <-ring_buffer_iter_peek
+            tail-4499    [002] d....  3111.299016: preempt_count_add <-__raw_spin_lock_irqsave
+            tail-4499    [002] d..1.  3111.299016: _raw_spin_unlock_irqrestore <-ring_buffer_iter_peek
+            tail-4499    [002] ...1.  3111.299017: preempt_count_sub <-_raw_spin_unlock_irqrestore
+            tail-4499    [002] d....  3111.299017: _raw_spin_lock <-ring_buffer_empty_cpu.part.0.isra.0
+            tail-4499    [002] d....  3111.299017: preempt_count_add <-_raw_spin_lock
+            tail-4499    [002] d..1.  3111.299017: _raw_spin_unlock <-ring_buffer_empty_cpu.part.0.isra.0
+```
