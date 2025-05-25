@@ -2,6 +2,18 @@
 ## perf
 perf is a powerful profiling tool built into the Linux kernel that allows you to analyze system and application performance using hardware and software counters.
 
+perf is Linux interface to PMC/PMU (Perfomance monitoring counter/unit) registers on the core.
+
+PMC counts events such as:
+- Number of instructions executed
+- CPU cycles used
+- Cache hits/misses
+- Branch predictions (correct/incorrect)
+- Memory accesses
+- TLB misses
+- Floating-point operations
+- Page faults
+Perf features:
 - Monitor CPU cycles, cache misses, branch predictions
 - Profile functions in user or kernel space
 - Sample call graphs (stack traces)
