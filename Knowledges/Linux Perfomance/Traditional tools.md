@@ -13,6 +13,7 @@ PMC counts events such as:
 - TLB misses
 - Floating-point operations
 - Page faults
+
 Perf features:
 - Monitor CPU cycles, cache misses, branch predictions
 - Profile functions in user or kernel space
