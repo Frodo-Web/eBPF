@@ -1,5 +1,7 @@
 # bpftrace
-Сравнение bpftrace с другими инструментами
+![image](https://github.com/user-attachments/assets/8bfb83f4-92ca-44c8-b2e1-0bd01e82cdde)
+
+## Сравнение bpftrace с другими инструментами
 мониторинга
 - perf(1): в сравнении с компактным и высокоуровневым языком bpftrace язык
 сценариев perf(1) выглядит слишком многословным. perf(1) поддерживает
@@ -40,3 +42,103 @@ bpftrace, напротив, способен также инструментир
 приложением или средой выполнения. Профилировщик базы данных MySQL
 уже знает, как инструментировать запросы, а профилировщик JVM — сборку
 мусора. В bpftrace все это приходится реализовывать вручную.
+
+## Примеры однострочных комманд
+```
+Подсчитывает число страниц, загруженных каждым процессом:
+bpftrace -e 'software:major-faults:1 { @[comm] = count(); }'
+
+Подсчитывает число отказов страниц для каждого процесса:
+bpftrace -e 'software:faults:1 { @[comm] = count(); }'
+
+Профилирует стек в пространстве пользователя для PID 189 с частотой 49 Гц:
+bpftrace -e 'profile:hz:49 /pid == 189/ { @[ustack] = count(); }'
+
+# bpftrace -l 'kprobe:vfs_*'
+kprobe:vfs_fallocate
+kprobe:vfs_truncate
+kprobe:vfs_open
+kprobe:vfs_setpos
+kprobe:vfs_llseek
+[...]
+bpftrace -l 'kprobe:vfs_*' | wc -l
+56
+```
+
+## Программирование на bpftrace
+```
+#!/usr/local/bin/bpftrace
+// эта программа измеряет продолжительность выполнения vfs_read()
+kprobe:vfs_read
+{
+@start[tid] = nsecs;
+}
+kretprobe:vfs_read
+/@start[tid]/
+{
+$duration_us = (nsecs - @start[tid]) / 1000;
+@us = hist($duration_us);
+delete(@start[tid]);
+}
+```
+Комментарии
+```
+// это комментарий
+
+/*
+* это многострочный
+* комментарий
+*/
+```
+Порядок использования
+```
+bpftrace -e program
+
+bpftrace file.bt
+```
+Структура
+```
+probes { actions }
+
+probes /filter/ { actions }
+
+probe1,probe2,... { actions }
+
+Есть два специальных типа зондов, для которых не нужно указывать дополни -
+тельные идентификаторы BEGIN и END. Они срабатывают в начале и в конце
+программы bpftrace (в точности как в awk(1))
+```
+Фильтры
+```
+/pid == 123/
+
+/pid != 0/ то же самое что /pid/
+
+/pid > 100 && pid < 1000/
+```
+Действия
+```
+{ action one; action two; action three }
+
+{ $x = 42; printf("$x is %d", $x); }
+```
+Hello world
+```
+# bpftrace -e 'BEGIN { printf("Hello, World!\n"); }'
+Attaching 1 probe...
+Hello, World!
+^C
+
+#!/usr/local/bin/bpftrace
+BEGIN
+{
+printf("Hello, World!\n");
+}
+```
+### Формат определения зондов
+
+Иерархия зависит от типа зонда. Например:
+```
+kprobe:vfs_read
+uprobe:/bin/bash:readline
+```
