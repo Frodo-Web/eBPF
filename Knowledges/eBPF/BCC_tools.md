@@ -315,3 +315,154 @@ $ ./flamegraph.pl --hash --bgcolors=grey < ../out.stackcount01.txt \
 > out.stackcount01.svg
 ```
 ![image](https://github.com/user-attachments/assets/3c6ac46d-7514-47c6-aea0-08ecc2066d68)
+
+Однострочные сценарии
+```
+Подсчет трассировок стека, приводящих к операции блочного ввода/вывода:
+stackcount t:block:block_rq_insert
+
+Подсчет трассировок стека, приводящих к отправке IP-пакетов:
+stackcount ip_output
+
+Подсчет трассировок стека, приводящих к отправке IP-пакетов, с разделением по
+PID:
+stackcount -P ip_output
+
+Подсчет трассировок стека, приводящих к блокировке потока и переходу в режим
+ожидания:
+stackcount t:sched:sched_switch
+
+Подсчет трассировок стека, приводящих к системному вызову read():
+stackcount t:syscalls:sys_enter_read
+```
+### trace
+Это многофункциональный инструмент BCC для трассировки отдельных
+событий из разных источников: kprobes, uprobes, tracepoints и USDT.
+```
+# trace 'do_sys_open "%s", arg2'
+PID TID COMM FUNC -
+29588 29591 device poll do_sys_open /dev/bus/usb
+29588 29591 device poll do_sys_open /dev/bus/usb/004
+[...]
+```
+
+Однострочные сценарии
+```
+Трассировка вызовов функции do_sys_open() с выводом имен открываемых
+файлов:
+trace 'do_sys_open "%s", arg2'
+
+Трассировка возврата из функции ядра do_sys_open() с выводом возвращаемого
+значения:
+trace 'r::do_sys_open "ret: %d", retval'
+
+Трассировка функции do_nanosleep() с выводом аргумента режима и трассировкой
+стека в пространстве пользователя:
+trace -U 'do_nanosleep "mode: %d", arg2'
+
+Трассировка запросов в библиотеку pam на аутентификацию:
+trace 'pam:pam_start "%s: %s", arg1, arg2'
+
+trace 'do_nanosleep(struct hrtimer_sleeper *t) "task: %x", t->task'
+```
+![image](https://github.com/user-attachments/assets/13215a79-41ab-4bcd-b5f7-e2a6c210e16a)
+```
+# trace -tKU 'r::sock_alloc "open %llx", retval' '__sock_release "close %llx", arg1'
+
+TIME PID TID COMM FUNC -
+1.093199 4182 7101 nf.dependency.M sock_alloc open ffff9c76526dac00
+kretprobe_trampoline+0x0 [kernel]
+sys_socket+0x55 [kernel]
+do_syscall_64+0x73 [kernel]
+entry_SYSCALL_64_after_hwframe+0x3d [kernel]
+__socket+0x7 [libc-2.27.so]
+Ljava/net/PlainSocketImpl;::socketCreate+0xc7 [perf-4182.map]
+Ljava/net/Socket;::setSoTimeout+0x2dc [perf-4182.map]
+Lorg/apache/http/impl/conn/DefaultClientConnectionOperator;::openConnectio...
+Lorg/apache/http/impl/client/DefaultRequestDirector;::tryConnect+0x60c [pe...
+Lorg/apache/http/impl/client/DefaultRequestDirector;::execute+0x1674 [perf...
+[...]
+
+[...]
+6.010530 4182 6797 nf.dependency.M __sock_release close ffff9c76526dac00
+__sock_release+0x1 [kernel]
+__fput+0xea [kernel]
+____fput+0xe [kernel]
+task_work_run+0x9d [kernel]
+exit_to_usermode_loop+0xc0 [kernel]
+do_syscall_64+0x121 [kernel]
+entry_SYSCALL_64_after_hwframe+0x3d [kernel]
+dup2+0x7 [libc-2.27.so]
+Ljava/net/PlainSocketImpl;::socketClose0+0xc7 [perf-4182.map]
+Ljava/net/Socket;::close+0x308 [perf-4182.map]
+Lorg/apache/http/impl/conn/DefaultClientConnection;::close+0x2d4 [perf-418...
+[...]
+```
+### argdist
+```
+# argdist -H 'r::__tcp_select_window():int:$retval'
+[21:50:03]
+$retval : count distribution
+0 -> 1 : 6100 |****************************************|
+2 -> 3 : 0 | |
+4 -> 7 : 0 | |
+8 -> 15 : 0 | |
+16 -> 31 : 0 | |
+32 -> 63 : 0 | |
+64 -> 127 : 0 | |
+128 -> 255 : 0 | |
+256 -> 511 : 0 | |
+512 -> 1023 : 0 | |
+1024 -> 2047 : 0 | |
+2048 -> 4095 : 0 | |
+4096 -> 8191 : 0 | |
+8192 -> 16383 : 24 | |
+16384 -> 32767 : 3535 |*********************** |
+32768 -> 65535 : 1752 |*********** |
+65536 -> 131071 : 2774 |****************** |
+131072 -> 262143 : 1001 |****** |
+262144 -> 524287 : 464 |*** |
+524288 -> 1048575 : 3 | |
+1048576 -> 2097151 : 9 | |
+2097152 -> 4194303 : 10 | |
+4194304 -> 8388607 : 2 | |
+[21:50:04]
+[...]
+```
+__tcp_select_window() is a low-level function in the Linux kernel's networking stack , specifically related to TCP (Transmission Control Protocol) flow control.
+
+It helps determine how much data the receiver is willing to accept at any given time — known as the receive window (win field in TCP header) .
+
+The receive window is advertised by the receiving side in each TCP segment to tell the sender how much buffer space is available. This mechanism prevents the sender from overwhelming the receiver with more data than it can handle.
+
+Однострочные сценарии
+```
+Вывести гистограмму результатов (размеров), возвращаемых функцией ядра
+vfs_read():
+argdist.py -H 'r::vfs_read()'
+
+Вывести гистограмму результатов (размеров), возвращаемых функцией read() из
+библиотеки libc в пространстве пользователя для PID 1005:
+argdist -p 1005 -H 'r:c:read()'
+
+Подсчитать число обращений к системным вызовам по их идентификаторам с ис-
+пользованием точки трассировки raw_syscalls:sys_enter:
+argdist.py -C 't:raw_syscalls:sys_enter():int:args->id'
+
+Подсчитать значения аргумента size для tcp_sendmsg():
+argdist -C 'p::tcp_sendmsg(struct sock *sk, struct msghdr *msg,
+size_t size):u32:size'
+
+Вывести гистограмму распределения значений аргумента size в вызовах tcp_
+sendmsg():
+argdist -H 'p::tcp_sendmsg(struct sock *sk, struct msghdr *msg,
+size_t size):u32:size'
+
+Подсчитать количество вызовов функции write() из библиотеки libc для PID 181
+по дескрипторам файлов:
+argdist -p 181 -C 'p:c:write(int fd):int:fd'
+
+Подсчитать операции чтения по процессам, для которых величина задержки была
+> 0.1 мс:
+argdist -C 'r::__vfs_read():u32:$PID:$latency > 100000
+```
