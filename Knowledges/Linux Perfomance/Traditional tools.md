@@ -1,4 +1,5 @@
 # Traditional tools
+# Tracing and profiling
 ## perf
 perf is a powerful profiling tool built into the Linux kernel that allows you to analyze system and application performance using hardware and software counters.
 
@@ -385,4 +386,167 @@ ltrace -c ls
   5.30    0.000804          38        21 malloc
   4.22    0.000640          40        16 readdir
   4.18    0.000633          37        17 memcpy
+```
+# Basic tools
+Method USE - Utilization, Saturation, Errors
+## uptime
+```
+$ uptime
+..
+03:16:59 up 17 days, 4:18, 1 user, load average: 2.74, 2.54, 2.58
+```
+## dmesg | tail
+```
+dmesg | tail
+..
+[1880957.563150] perl invoked oom-killer: gfp_mask=0x280da, order=0, oom_score_adj=0
+[...]
+[1880957.563400] Out of memory: Kill process 18694 (perl) score 246 or sacrifice child
+[1880957.563408] Killed process 18694 (perl) total-vm:1972392kB, anon-rss:1953348kB,
+file-rss:0kB
+[2320864.954447] TCP: Possible SYN flooding on port 7001. Dropping request. Check
+SNMP counters.
+```
+## vmstat 1
+```
+$ vmstat 1
+..
+procs ---------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+r b swpd free buff cache si so bi bo in cs us sy id wa st
+34 0 0 200889792 73708 591828 0 0 0 5 6 10 96 1 3 0 0
+32 0 0 200889920 73708 591860 0 0 0 592 13284 4282 98 1 1 0 0
+32 0 0 200890112 73708 591860 0 0 0 0 9501 2154 99 1 0 0 0
+[...]
+```
+## mpstat -P ALL 1
+```
+$ mpstat -P ALL 1
+[...]
+03:16:41 AM CPU %usr %nice %sys %iowait %irq %soft %steal %guest %gnice %idle
+03:16:42 AM all 14.27 0.00 0.75 0.44 0.00 0.00 0.06 0.00 0.00 84.48
+03:16:42 AM 0 100.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+03:16:42 AM 1 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 100.00
+03:16:42 AM 2 8.08 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 91.92
+03:16:42 AM 3 10.00 0.00 1.00 0.00 0.00 0.00 1.00 0.00 0.00 88.00
+03:16:42 AM 4 1.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 98.99
+03:16:42 AM 5 5.10 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 94.90
+03:16:42 AM 6 11.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 89.00
+03:16:42 AM 7 10.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 90.00
+[...]
+```
+## pidstat 1
+```
+$ pidstat 1
+Linux 4.13.0-19-generic (...) 08/04/2018 _x86_64_ (16 CPU)
+03:20:47 AM UID PID %usr %system %guest %CPU CPU Command
+03:20:48 AM 0 1307 0.00 0.98 0.00 0.98 8 irqbalance
+03:20:48 AM 33 12178 4.90 0.00 0.00 4.90 4 java
+03:20:48 AM 33 12569 476.47 24.51 0.00 500.98 0 java
+03:20:48 AM 0 130249 0.98 0.98 0.00 1.96 1 pidstat
+03:20:48 AM UID PID %usr %system %guest %CPU CPU Command
+03:20:49 AM 33 12178 4.00 0.00 0.00 4.00 4 java
+03:20:49 AM 33 12569 331.00 21.00 0.00 352.00 0 java
+03:20:49 AM 0 129906 1.00 0.00 0.00 1.00 8 sshd
+03:20:49 AM 0 130249 1.00 1.00 0.00 2.00 1 pidstat
+03:20:49 AM UID PID %usr %system %guest %CPU CPU Command
+03:20:50 AM 33 12178 4.00 0.00 0.00 4.00 4 java
+03:20:50 AM 113 12356 1.00 0.00 0.00 1.00 11 snmp-pass
+03:20:50 AM 33 12569 210.00 13.00 0.00 223.00 0 java
+03:20:50 AM 0 130249 1.00 0.00 0.00 1.00 1 pidstat
+[...]
+```
+## iostat -xz 1
+```
+$ iostat -xz 1
+Linux 4.13.0-19-generic (...) 08/04/2018 _x86_64_ (16 CPU)
+[...]
+avg-cpu: %user %nice %system %iowait %steal %idle
+22.90 0.00 0.82 0.63 0.06 75.59
+Device: rrqm/s wrqm/s r/s w/s rkB/s wkB/s avgrq-sz avgqu-sz
+await r_await w_await svctm %util
+nvme0n1 0.00 1167.00 0.00 1220.00 0.00 151293.00 248.02 2.10
+1.72 0.00 1.72 0.21 26.00
+nvme1n1 0.00 1164.00 0.00 1219.00 0.00 151384.00 248.37 0.90
+0.74 0.00 0.74 0.19 23.60
+md0 0.00 0.00 0.00 4770.00 0.00 303113.00 127.09 .00
+0.00 0.00 0.00 0.00 0.00
+[...]
+```
+## free -wm
+```
+$ free -m
+total used free shared buff/cache available
+Mem: 122872 39158 3107 1166 80607 81214
+Swap: 0 0 0
+```
+## vfsstat
+```
+# vfsstat
+..
+TIME READ/s WRITE/s CREATE/s OPEN/s FSYNC/s
+18:35:32: 231 12 4 98 0
+18:35:33: 274 13 4 106 0
+18:35:34: 586 86 4 251 0
+18:35:35: 241 15 4 99 0
+18:35:36: 232 10 4 98 0
+[...]
+
+bpftrace -e 'kprobe:vfs_read { @[comm] = count(); }'
+..
+Attaching 1 probe...
+^C
+@[rtkit-daemon]: 1
+[...]
+@[gnome-shell]: 207
+@[Chrome_IOThread]: 222
+@[chrome]: 225
+@[InputThread]: 302
+@[gdbus]: 819
+@[Web Content]: 1725
+```
+## sar -n DEV 1
+```
+$ sar -n DEV 1
+Linux 4.13.0-19-generic (...) 08/04/2018 _x86_64_ (16 CPU)
+03:38:28 AM IFACE rxpck/s txpck/s rxkB/s txkB/s rxcmp/s txcmp/s
+rxmcst/s %ifutil
+03:38:29 AM eth0 7770.00 4444.00 10720.12 5574.74 0.00 0.00
+0.00 0.00
+03:38:29 AM lo 24.00 24.00 19.63 19.63 0.00 0.00
+0.00 0.00
+03:38:29 AM IFACE rxpck/s txpck/s rxkB/s txkB/s rxcmp/s txcmp/s
+rxmcst/s %ifutil
+03:38:30 AM eth0 5579.00 2175.00 7829.20 2626.93 0.00 0.00
+0.00 0.00
+03:38:30 AM lo 33.00 33.00 1.79 1.79 0.00 0.00
+0.00 0.00
+[...]
+```
+## sar -n TCP,ETCP 1
+```
+# sar -n TCP,ETCP 1
+Linux 4.13.0-19-generic (...) 08/04/2019 _x86_64_ (16 CPU)
+03:41:01 AM active/s passive/s iseg/s oseg/s
+03:41:02 AM 1.00 1.00 348.00 1626.00
+03:41:01 AM atmptf/s estres/s retrans/s isegerr/s orsts/s
+03:41:02 AM 0.00 0.00 1.00 0.00 0.00
+03:41:02 AM active/s passive/s iseg/s oseg/s
+03:41:03 AM 0.00 0.00 521.00 2660.00
+03:41:02 AM atmptf/s estres/s retrans/s isegerr/s orsts/s
+03:41:03 AM 0.00 0.00 0.00 0.00 0.00
+[...]
+```
+## top
+```
+top - 03:44:14 up 17 days, 4:46, 1 user, load average: 2.32, 2.20, 2.21
+Tasks: 474 total, 1 running, 473 sleeping, 0 stopped, 0 zombie
+%Cpu(s): 29.7 us, 0.4 sy, 0.0 ni, 69.7 id, 0.1 wa, 0.0 hi, 0.0 si, 0.0 st
+KiB Mem : 12582137+total, 3159704 free, 40109716 used, 82551960 buff/cache
+KiB Swap: 0 total, 0 free, 0 used. 83151728 avail Mem
+PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND
+12569 www 20 0 2.495t 0.051t 0.018t S 484.7 43.3 13276:02 java
+12178 www 20 0 12.214g 3.107g 16540 S 4.9 2.6 553:41 java
+125312 root 20 0 0 0 0 S 1.0 0.0 0:13.20 kworker/u256:0
+128697 root 20 0 0 0 0 S 0.3 0.0 0:02.10 kworker/10:2
+[...]
 ```
