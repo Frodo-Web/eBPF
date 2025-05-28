@@ -63,6 +63,21 @@ kprobe:vfs_llseek
 [...]
 bpftrace -l 'kprobe:vfs_*' | wc -l
 56
+
+# bpftrace -e 't:block:block_rq_insert { @[kstack] = count(); }'
+Attaching 1 probe...
+^C
+[...]
+@[
+blk_mq_insert_requests+203
+blk_mq_sched_insert_requests+111
+blk_mq_flush_plug_list+446
+blk_flush_plug_list+234
+blk_finish_plug+44
+dmcrypt_write+593
+kthread+289
+ret_from_fork+53
+]: 39
 ```
 
 ## Программирование на bpftrace
@@ -363,3 +378,5 @@ if ($inet_family == $AF_INET) {
 ...
 }
 ```
+### Функции bpftrace
+![image](https://github.com/user-attachments/assets/d9a85960-3e0e-455a-86e0-5549a83f9017)
