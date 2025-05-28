@@ -154,6 +154,8 @@ printf("got: %llx %s\n", $x, str($x)); exit();
 bpftrace. Обычно они доступны только для чтения. К ним относятся pid (иденти-
 фикатор процесса), comm (имя процесса), nsecs (отметка времени в наносекундах)
 и curtask (адрес task_struct текущего потока).
+![image](https://github.com/user-attachments/assets/152954b6-c433-47f2-bdb1-80346911a2ab)
+
 - Временные переменные (scratch variables) можно использовать для временного
 хранения результатов вычислений. Их имена начинаются с префикса «$». Сама пере-
 менная и ее тип определяются первой операцией присваивания.
@@ -253,4 +255,111 @@ Attaching 2 probes...
 ```
 kprobe:vfs_read
 uprobe:/bin/bash:readline
+```
+### Типы зондов 
+![image](https://github.com/user-attachments/assets/5d993c57-6b8c-4382-8b33-f05bf438f47f)
+#### tracepoint
+```
+# bpftrace -e 'tracepoint:syscalls:sys_enter_clone {
+printf("-> clone() by %s PID %d\n", comm, pid); }
+tracepoint:syscalls:sys_exit_clone {
+printf("<- clone() return %d, %s PID %d\n", args->ret, comm, pid); }'
+Attaching 2 probes...
+-> clone() by bash PID 2582
+<- clone() return 27804, bash PID 2582
+<- clone() return 0, bash PID 27804
+
+# bpftrace -e 't:syscalls:sys_*_execve { printf("%s %s PID %d\n", probe, comm,
+pid); }'
+Attaching 2 probes...
+tracepoint:syscalls:sys_enter_execve bash PID 28181
+tracepoint:syscalls:sys_exit_execve ls PID 28181
+```
+#### usdt
+```
+usdt:binary_path:probe_name
+usdt:library_path:probe_name
+usdt:binary_path:probe_namespace:probe_name
+usdt:library_path:probe_namespace:probe_name
+
+usdt:/.../libjvm.so:hotspot:method__entry
+
+# bpftrace -l 'usdt:/usr/local/cpython/python'
+usdt:/usr/local/cpython/python:line
+usdt:/usr/local/cpython/python:function__entry
+usdt:/usr/local/cpython/python:function__return
+usdt:/usr/local/cpython/python:import__find__load__start
+usdt:/usr/local/cpython/python:import__find__load__done
+usdt:/usr/local/cpython/python:gc__start
+usdt:/sur/local/cpython/python:gc__done
+```
+Можно получить и список зондов USDT в выполняющемся процессе, в этом случае
+вместо имени файла следует использовать параметр -p PID.
+#### kprobe и kretprobe
+```
+kprobe:function_name
+kretprobe:function_name
+```
+#### uprobe и uretprobe
+```
+uprobe:binary_path:function_name
+uprobe:library_path:function_name
+uretprobe:binary_path:function_name
+uretprobe:library_path:function_name
+```
+#### software и hardware
+```
+software:event_name:count
+software:event_name:
+hardware:event_name:count
+hardware:event_name:
+```
+Программные события похожи на точки трассировки tracepoint, но определены для
+метрик, основанных на подсчете и выборках. Аппаратные события — это счетчики
+PMC для анализа на уровне процессора.
+
+События этих двух типов могут возникать настолько часто, что инструментация
+любого из них повлечет значительные издержки, снижающие производительность
+системы. Этого можно избежать, использовав выборку и поле count. Если поле count
+определено, зонд будет срабатывать один раз на каждые [count] событий. Если поля count нет, используется значение по умолчанию. Например, зонд software:page-faults:100 будет срабатывать один раз на каждые 100 отказов страниц.
+![image](https://github.com/user-attachments/assets/36fd6598-4198-4c1b-b35f-d68ac8d329be)
+![image](https://github.com/user-attachments/assets/1110ad8b-48cc-48cd-a5df-e5b67c22cd58)
+#### profile и interval
+Зонды этого типа инструментируют события, имеющие отношение к времени.
+```
+profile:hz:rate
+profile:s:rate
+profile:ms:rate
+profile:us:rate
+interval:s:rate
+interval:ms:rate
+```
+Зонды profile срабатывают для всех процессоров и используются для определения
+параметров загрузки процессора.
+
+Зонды interval срабатывают только для одного
+процессора и используются для вывода интервальных метрик.
+
+Например, зонд profile:hz:99 срабатывает 99 раз в секунду для всех процессоров.
+Частота 99 используется чаще, чем 100, чтобы избежать проблем, связанных с по-
+паданием в одну и ту же точку. Зонд interval:s:1 будет срабатывать один раз в секунду
+и может использоваться для вывода метрик раз в секунду.
+### Тернарные операторы
+```
+test ? true_statement : false_statement
+
+$abs = $x >= 0 ? $x : - $x;
+```
+### if
+```
+if (test) { true_statements }
+if (test) { true_statements } else { false_statements }
+
+if ($inet_family == $AF_INET) {
+// IPv4
+...
+} else {
+// IPv6
+...
+}
 ```
