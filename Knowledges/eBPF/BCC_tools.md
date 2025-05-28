@@ -150,3 +150,118 @@ entry_SYSCALL_64_after_hwframe
 - iperf (24092)
 58
 ```
+## Specialized BCC tools (Многоцелевые инструменты)
+### funccount
+```
+1. Вызывается ли функция tcp_drop()?
+# funccount tcp_drop
+Tracing 1 functions for "tcp_drop"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+tcp_drop 3
+Detaching...
+
+2. Какая функция из подсистемы VFS в ядре вызывается чаще всего?
+# funccount 'vfs_*'
+Tracing 55 functions for "vfs_*"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+vfs_rename 1
+vfs_readlink 2
+vfs_lock_file 2
+vfs_statfs 3
+vfs_fsync_range 3
+vfs_unlink 5
+vfs_statx 189
+vfs_statx_fd 229
+vfs_open 345
+vfs_getattr_nosec 353
+vfs_getattr 353
+vfs_writev 1776
+vfs_read 5533
+vfs_write 6938
+Detaching...
+
+3. Сколько раз в секунду вызывается функция pthread_mutex_lock() в простран-
+стве пользователя?
+# funccount -i 1 c:pthread_mutex_lock
+Tracing 1 functions for "c:pthread_mutex_lock"... Hit Ctrl-C to end.
+FUNC COUNT
+pthread_mutex_lock 1849
+FUNC COUNT
+pthread_mutex_lock 1761
+FUNC COUNT
+pthread_mutex_lock 2057
+FUNC COUNT
+pthread_mutex_lock 2261
+[...]
+
+4. Какая из строковых функций в libc вызывается чаще всего в системе в целом?
+# funccount 'c:str*'
+Tracing 59 functions for "c:str*"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+strndup 3
+strerror_r 5
+strerror 5
+strtof32x_l 350
+strtoul 587
+strtoll 724
+strtok_r 2839
+strdup 5788
+Detaching...
+
+5. Какой системный вызов вызывается чаще всего?
+# funccount 't:syscalls:sys_enter_*'
+Tracing 316 functions for "t:syscalls:sys_enter_*"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+syscalls:sys_enter_creat 1
+[...]
+syscalls:sys_enter_read 6582
+syscalls:sys_enter_write 7442
+syscalls:sys_enter_mprotect 7460
+syscalls:sys_enter_gettid 7589
+syscalls:sys_enter_ioctl 10984
+syscalls:sys_enter_poll 14980
+syscalls:sys_enter_recvmsg 27113
+syscalls:sys_enter_futex 42929
+Detaching...
+```
+funccount [options] eventname
+
+Синтаксис аргумента eventname:
+ - name или p:name: инструментировать функцию ядра с именем name();
+ - lib:name или p:lib:name: инструментировать функцию в пространстве пользо-
+вателя с именем name(), находящуюся в библиотеке lib;
+ - path:name: инструментировать функцию в пространстве пользователя с именем
+name(), находящуюся в файле path;
+ - t:system:name: инструментировать точку трассировки с именем system:name;
+ - u:lib:name: инструментировать зонд USDT в библиотеке lib с именем name;
+ - *: подстановочный символ, соответствующий любой строке. Вместо него можно
+использовать параметр -r с регулярным выражением.
+
+Однострочные сценарии
+```
+Подсчет вызовов функций виртуальной файловой системы в ядре:
+funccount 'vfs_*'
+
+Подсчет вызовов функций TCP в ядре:
+funccount 'tcp_*'
+
+Определение частоты вызовов в секунду функций TCP:
+funccount -i 1 'tcp_send*'
+
+Определение частоты операций блочного ввода/вывода в секунду:
+funccount -i 1 't:block:*'
+
+Определение частоты запуска новых процессов в секунду:
+funccount -i 1 t:sched:sched_process_fork
+
+Определение частоты вызовов в секунду функции getaddrinfo() (разрешение имен)
+из библиотеки libc:
+funccount -i 1 c:getaddrinfo
+
+Подсчет вызовов всех функций «os.*” в библиотеке libgo:
+funccount 'go:os.*'
+```
