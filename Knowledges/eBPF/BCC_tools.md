@@ -265,3 +265,53 @@ funccount -i 1 c:getaddrinfo
 Подсчет вызовов всех функций «os.*” в библиотеке libgo:
 funccount 'go:os.*'
 ```
+### stackcount
+Подсчитывает трассировки стека, которые привели к событию. Событием может быть функция в пространстве ядра или пользо-
+вателя, точка трассировки или зонд USDT. 
+```
+# stackcount ktime_get
+Tracing 1 functions for "ktime_get"... Hit Ctrl-C to end.
+^C
+[...]
+ktime_get
+nvme_queue_rq
+__blk_mq_try_issue_directly
+blk_mq_try_issue_directly
+blk_mq_make_request
+generic_make_request
+dmcrypt_write
+kthread
+ret_from_fork
+52
+[...]
+ktime_get
+tick_nohz_idle_enter
+do_idle
+cpu_startup_entry
+start_secondary
+secondary_startup_64
+1077
+Detaching...
+
+# stackcount -P ktime_get
+[...]
+ktime_get
+tick_nohz_idle_enter
+do_idle
+cpu_startup_entry
+start_secondary
+secondary_startup_64
+swapper/2 [0]
+207
+```
+Creating flamegraphs
+```
+# stackcount -f -P -D 10 ktime_get > out.stackcount01.txt
+$ wc out.stackcount01.txt
+1586 3425 387661 out.stackcount01.txt
+$ git clone http://github.com/brendangregg/FlameGraph
+$ cd FlameGraph
+$ ./flamegraph.pl --hash --bgcolors=grey < ../out.stackcount01.txt \
+> out.stackcount01.svg
+```
+![image](https://github.com/user-attachments/assets/3c6ac46d-7514-47c6-aea0-08ecc2066d68)
