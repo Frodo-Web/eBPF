@@ -22,6 +22,7 @@ CFS’s task picking logic is based on this p->se.vruntime value and it is thus 
 Most of the rest of CFS’s design just falls out of this really simple concept, with a few add-on embellishments like nice levels, multiprocessing and various algorithm variants to recognize sleepers.
 
 https://docs.kernel.org/scheduler/sched-design-CFS.html
+https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 ### EEVDF Scheduler
 CFS can be replaced with Earliest Eligible Virtual Deadline (EEVDF) First starting from kernel version 6.6 as an option.
 
