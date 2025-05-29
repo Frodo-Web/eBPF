@@ -121,6 +121,9 @@ PID TTY TIME CMD
 interval:s:5 { exit(); }'
 Attaching 2 probes...
 @reads: 735
+
+bpftrace -e 'tracepoint:syscalls:sys_exit_read /args->ret > 0/ {
+@bytes = sum(args->ret); }'
 ```
 
 ## Программирование на bpftrace
