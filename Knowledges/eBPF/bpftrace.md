@@ -1,5 +1,6 @@
 # bpftrace
 ![image](https://github.com/user-attachments/assets/8bfb83f4-92ca-44c8-b2e1-0bd01e82cdde)
+![image](https://github.com/user-attachments/assets/fc593cd1-7404-484e-b522-c227006495ae)
 
 ## Сравнение bpftrace с другими инструментами
 мониторинга
