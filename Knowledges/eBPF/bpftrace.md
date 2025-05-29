@@ -105,6 +105,22 @@ Attaching 1 probe...
 2.0.so.0.5600.3)
 7f220f64fbc0 0x7f220f64fbc0 ([unknown])
 841f0f 0x841f0f ([unknown])
+
+# bpftrace --unsafe -e 't:syscalls:sys_enter_nanosleep { system("ps -p %d\n",
+pid); }'
+Attaching 1 probe...
+PID TTY TIME CMD
+29893 tty2 05:34:22 mysqld
+PID TTY TIME CMD
+29893 tty2 05:34:22 mysqld
+PID TTY TIME CMD
+29893 tty2 05:34:22 mysqld
+[...]
+
+# bpftrace -e 't:syscalls:sys_enter_read { @reads = count(); }
+interval:s:5 { exit(); }'
+Attaching 2 probes...
+@reads: 735
 ```
 
 ## Программирование на bpftrace
@@ -234,6 +250,8 @@ probe2 { $x = @a; }
 Это пример карты с множественными ключами, здесь роль ключей играют значение
 встроенной переменной pid и значение временной переменной $fd.
 ### Функции карт
+![image](https://github.com/user-attachments/assets/3b307fe6-894b-44f5-aecc-c0f2b7217398)
+
 ```
 @x = count(); //Для каждого проца
 
