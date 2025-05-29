@@ -124,8 +124,36 @@ Attaching 2 probes...
 
 bpftrace -e 'tracepoint:syscalls:sys_exit_read /args->ret > 0/ {
 @bytes = sum(args->ret); }'
-```
 
+# bpftrace -e 'tracepoint:syscalls:sys_exit_read {
+@ret = lhist(args->ret, 0, 1000, 100); }'
+Attaching 1 probe...
+^C
+@ret:
+(..., 0) 101 |@@@ |
+[0, 100) 1569 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[100, 200) 5 | |
+[200, 300) 0 | |
+[300, 400) 3 | |
+[400, 500) 0 | |
+[500, 600) 0 | |
+[600, 700) 3 | |
+[700, 800) 0 | |
+[800, 900) 0 | |
+[900, 1000) 0 | |
+[1000, ...) 5 | |
+
+# bpftrace -e 'kprobe:vfs_read { @start[tid] = nsecs; }
+kretprobe:vfs_read /@start[tid]/ {
+@ms[comm] = sum(nsecs - @start[tid]); delete(@start[tid]); }
+END { print(@ms, 0, 1000000); clear(@ms); clear(@start); }'
+Attaching 3 probes...
+[...]
+@ms[Xorg]: 3
+@ms[InputThread]: 3
+@ms[chrome]: 4
+@ms[Web Content]: 5
+```
 ## Программирование на bpftrace
 ```
 #!/usr/local/bin/bpftrace
