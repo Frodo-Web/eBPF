@@ -78,6 +78,33 @@ dmcrypt_write+593
 kthread+289
 ret_from_fork+53
 ]: 39
+
+# bpftrace -e 'uprobe:/bin/bash:readline {
+printf("PS1: %s\n", str(*uaddr("ps1_prompt"))); }'
+Attaching 1 probe...
+PS1: \[\e[34;1m\]\u@\h:\w>\[\e[0m\]
+PS1: \[\e[34;1m\]\u@\h:\w>\[\e[0m\]
+^C
+
+# bpftrace -e 'tracepoint:timer:hrtimer_start { @[ksym(args->function)] = count(); }'
+Attaching 1 probe...
+^C
+@[sched_rt_period_timer]: 4
+@[watchdog_timer_fn]: 8
+@[timerfd_tmrproc]: 15
+@[intel_uncore_fw_release_timer]: 1111
+@[it_real_fn]: 2269
+@[hrtimer_wakeup]: 7714
+@[tick_sched_timer]: 27092
+
+# bpftrace -e 'k:do_nanosleep { printf("%s", ustack(perf)); }'
+Attaching 1 probe...
+[...]
+7f220f1f2c60 nanosleep+64 (/lib/x86_64-linux-gnu/libpthread-2.27.so)
+7f220f653fdd g_timeout_add_full+77 (/usr/lib/x86_64-linux-gnu/libglib-
+2.0.so.0.5600.3)
+7f220f64fbc0 0x7f220f64fbc0 ([unknown])
+841f0f 0x841f0f ([unknown])
 ```
 
 ## Программирование на bpftrace
