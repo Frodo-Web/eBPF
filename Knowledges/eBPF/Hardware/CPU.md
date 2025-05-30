@@ -95,8 +95,8 @@ usecs : count distribution
 # sar -uq 1
 Linux 4.18.0-virtual (...) 01/21/2019 _x86_64_ (36 CPU)
 11:06:25 PM CPU %user %nice %system %iowait %steal %idle
-11:06:26 PM all 88.06 0.00 11.94 0.00 0.00 0.00
+11:06:26 PM all 88.06 0.00  11.94   0.00    0.00   0.00
 11:06:25 PM runq-sz plist-sz ldavg-1 ldavg-5 ldavg-15 blocked
-11:06:26 PM 72 1030 65.90 41.52 34.75 0
+11:06:26 PM 72      1030     65.90   41.52   34.75    0
 [...]
 ```
