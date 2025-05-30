@@ -33,3 +33,25 @@
 поэтому производительность вычислительного приложения может быть
 низкой, даже когда система практически простаивает. Этот нелогичный
 сценарий можно опознать, изучив задержку в очереди на выполнение.
+
+## tlbstat
+```
+# tlbstat -C0 1
+K_CYCLES K_INSTR IPC DTLB_WALKS ITLB_WALKS K_DTLBCYC K_ITLBCYC DTLB% ITLB%
+2875793 276051   0.10 89709496  65862302   787913    650834    27.40 22.63
+2860557 273767   0.10 88829158  65213248   780301    644292    27.28 22.52
+2885138 276533   0.10 89683045  65813992   787391    650494    27.29 22.55
+2532843 243104   0.10 79055465  58023221   693910    573168    27.40 22.63
+[...]
+```
+ - K_CYCLES: тысячи тактов CPU;
+ - K_INSTR: тысячи инструкций CPU;
+ - IPC: инструкций на такт;
+ - DTLB_WALKS: число обходов TLB данных;
+ - ITLB_WALKS: число обходов TLB инструкций;
+ - K_DTLBCYC: тысячи тактов, когда хотя бы один обработчик отсутствия страницы (Page-Miss Handler, PMH) был активен во время обхода TLB данных;
+ - K_ITLBCYC: тысячи тактов, когда хотя бы один обработчик PMH был активен во время обхода TLB инструкций;
+ - DTLB%: доля активных тактов TLB данных в общем числе тактов;
+ - ITLB%: доля активных тактов TLB инструкций в общем числе тактов.
+
+"Data TLB walk" refers to the hardware-assisted process of translating a virtual address to a physical address using the Translation Lookaside Buffer (TLB) , specifically when handling a data access (as opposed to instruction fetch).
