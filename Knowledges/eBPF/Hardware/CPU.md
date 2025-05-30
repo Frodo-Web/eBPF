@@ -1,4 +1,6 @@
 # CPU
+![image](https://github.com/user-attachments/assets/b62e93db-8274-456d-87b1-c462727fcf73)
+
 ## Источники событий
 ![image](https://github.com/user-attachments/assets/a438faca-2506-45e8-97c3-2a966c4c46be)
 А также попадания в кеш (PMC) - можно связать с вызовом приложения.<br>
@@ -35,6 +37,12 @@
 сценарий можно опознать, изучив задержку в очереди на выполнение.
 
 ## PMC
+В облачной среде счётчики PMC часто отключают
+```
+# dmesg | grep PMU
+[ 2.827349] Performance Events: unsupported p6 CPU model 85 no PMU driver,
+software events only.
+```
 ### tlbstat
 ```
 # tlbstat -C0 1
