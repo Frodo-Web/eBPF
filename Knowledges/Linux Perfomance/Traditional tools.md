@@ -5,6 +5,23 @@ perf is a powerful profiling tool built into the Linux kernel that allows you to
 
 perf is Linux interface to PMC/PMU (Perfomance monitoring counter/unit) registers on the core.
 
+```
+$ perf stat -d gzip file1
+Performance counter stats for 'gzip file1':
+3952.239208 task-clock (msec) # 0.999 CPUs utilized
+6 context-switches # 0.002 K/sec
+0 cpu-migrations # 0.000 K/sec
+127 page-faults # 0.032 K/sec
+14,863,135,172 cycles # 3.761 GHz (62.35%)
+18,320,918,801 instructions # 1.23 insn per cycle (74.90%)
+3,876,390,410 branches # 980.809 M/sec (74.90%)
+135,062,519 branch-misses # 3.48% of all branches (74.97%)
+3,725,936,639 L1-dcache-loads # 942.741 M/sec (75.09%)
+657,864,906 L1-dcache-load-misses # 17.66% of all L1-dcache hits (75.16%)
+50,906,146 LLC-loads # 12.880 M/sec (50.01%)
+1,411,636 LLC-load-misses # 2.77% of all LL-cache hits (49.87%)
+```
+
 PMC counts events such as:
 - Number of instructions executed
 - CPU cycles used
