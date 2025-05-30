@@ -129,7 +129,7 @@ This is the mechanism used by an operating system to increase the amount of prog
 If a page fault occurs for a reference to an address that is not part of the virtual address space, meaning there cannot be a page in memory corresponding to it, then it is called an invalid page fault. The page fault handler in the operating system will then generally pass a segmentation fault to the offending process, indicating that the access was invalid; this usually results in abnormal termination of the code that made the invalid reference. A null pointer is usually represented as a pointer to address 0 in the address space; many operating systems set up the MMU to indicate that the page that contains that address is not in memory, and do not include that page in the virtual address space, so that attempts to read or write the memory referenced by a null pointer get an invalid page fault. 
 
 Kernel Page Table Isolation, KPTI устраняет уязвимость Meltdown
-![Kernel_page-table_isolation svg](https://github.com/user-attachments/assets/1ec35401-4719-4fbb-b194-215e4f21715d)
+![image](https://github.com/user-attachments/assets/f281afe7-12c1-42e1-a93a-2626487ab279)
 
 ## Доступ к памяти
 - Неоднородный доступ к памяти (non-uniform memory access, NUMA) - архитектура организации оперативной памяти, используемая в мультипроцессорных системах, в которой процессор имеет быстрый доступ к локальной памяти через свой контроллер, а также более медленный канал до памяти, подключённой к контроллерам (слотам) других процессоров, реализуемый через шину обмена данными.
