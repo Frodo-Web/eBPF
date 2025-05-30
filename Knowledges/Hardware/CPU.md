@@ -103,6 +103,12 @@ The Linux scheduler is designed to be cache-aware :
 Блок управления памятью (Memory Management Unit, MMU), отвечающий за преобразование
 виртуальных адресов в физические, имеет свой кэш — буфер ассоциативной трансляции (Translation Lookaside Buffer, TLB).
 
+## TLB
+
+A translation lookaside buffer (TLB) is a memory cache that stores the recent translations of virtual memory to physical memory. It is used to reduce the time taken to access a user memory location.[1] It can be called an address-translation cache. It is a part of the chip's memory-management unit (MMU). A TLB may reside between the CPU and the CPU cache, between CPU cache and the main memory or between the different levels of the multi-level cache. 
+
+![Page_table_actions svg](https://github.com/user-attachments/assets/7fd3752a-b11a-4183-87f7-aa166603e123)
+
 ## Page faults
 Page fault is an exception that the memory management unit (MMU) raises when a process accesses a memory page without proper preparations. Accessing the page requires a mapping to be added to the process's virtual address space. Furthermore, the actual page contents may need to be loaded from a back-up, e.g. a disk. The MMU detects the page fault, but the operating system's kernel handles the exception by making the required page accessible in the physical memory or denying an illegal memory access. 
 
@@ -121,6 +127,9 @@ This is the mechanism used by an operating system to increase the amount of prog
  - Invalid page fault
 
 If a page fault occurs for a reference to an address that is not part of the virtual address space, meaning there cannot be a page in memory corresponding to it, then it is called an invalid page fault. The page fault handler in the operating system will then generally pass a segmentation fault to the offending process, indicating that the access was invalid; this usually results in abnormal termination of the code that made the invalid reference. A null pointer is usually represented as a pointer to address 0 in the address space; many operating systems set up the MMU to indicate that the page that contains that address is not in memory, and do not include that page in the virtual address space, so that attempts to read or write the memory referenced by a null pointer get an invalid page fault. 
+
+Kernel Page Table Isolation, KPTI устраняет уязвимость Meltdown
+![Kernel_page-table_isolation svg](https://github.com/user-attachments/assets/1ec35401-4719-4fbb-b194-215e4f21715d)
 
 ## Доступ к памяти
 - Неоднородный доступ к памяти (non-uniform memory access, NUMA) - архитектура организации оперативной памяти, используемая в мультипроцессорных системах, в которой процессор имеет быстрый доступ к локальной памяти через свой контроллер, а также более медленный канал до памяти, подключённой к контроллерам (слотам) других процессоров, реализуемый через шину обмена данными.
