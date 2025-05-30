@@ -104,8 +104,21 @@ The Linux scheduler is designed to be cache-aware :
 виртуальных адресов в физические, имеет свой кэш — буфер ассоциативной трансляции (Translation Lookaside Buffer, TLB).
 
 ## TLB
+- A translation table walk occurs as the result of a TLB miss, and starts with a read of the appropriate starting-level translation table. The result of that read determines whether additional translation table reads are required, for this stage of translation
+
 
 A translation lookaside buffer (TLB) is a memory cache that stores the recent translations of virtual memory to physical memory. It is used to reduce the time taken to access a user memory location.[1] It can be called an address-translation cache. It is a part of the chip's memory-management unit (MMU). A TLB may reside between the CPU and the CPU cache, between CPU cache and the main memory or between the different levels of the multi-level cache. 
+
+Similar to caches, TLBs may have multiple levels. CPUs can be (and nowadays usually are) built with multiple TLBs, for example a small L1 TLB (potentially fully associative) that is extremely fast, and a larger L2 TLB that is somewhat slower. When instruction-TLB (ITLB) and data-TLB (DTLB) are used, a CPU can have three (ITLB1, DTLB1, TLB2) or four TLBs. 
+
+These are typical performance levels of a TLB:
+
+ - Size: 12 bits – 4,096 entries
+ - Hit time: 0.5 – 1 clock cycle
+ - Miss penalty: 10 – 100 clock cycles
+ - Miss rate: 0.01 – 1% (20–40% for sparse/graph applications)
+
+On an address-space switch, as occurs when context switching between processes (but not between threads), some TLB entries can become invalid, since the virtual-to-physical mapping is different. The simplest strategy to deal with this is to completely flush the TLB. This means that after a switch, the TLB is empty, and any memory reference will be a miss, so it will be some time before things are running back at full speed. Newer CPUs use more effective strategies marking which process an entry is for. This means that if a second process runs for only a short time and jumps back to a first process, the TLB may still have valid entries, saving the time to reload them.
 
 ![image](https://github.com/user-attachments/assets/aaa853d4-400e-4c7e-a168-9959d0afefcc)
 
