@@ -64,3 +64,6 @@ K_CYCLES K_INSTR IPC DTLB_WALKS ITLB_WALKS K_DTLBCYC K_ITLBCYC DTLB% ITLB%
  - ITLB%: доля активных тактов TLB инструкций в общем числе тактов.
 
 "Data TLB walk" refers to the hardware-assisted process of translating a virtual address to a physical address using the Translation Lookaside Buffer (TLB) , specifically when handling a data access (as opposed to instruction fetch).
+
+## BPF tools
+![image](https://github.com/user-attachments/assets/bbfc8c8d-0eaf-42e4-aaf8-617ebb3182ba)
