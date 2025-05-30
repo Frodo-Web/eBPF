@@ -34,7 +34,8 @@
 низкой, даже когда система практически простаивает. Этот нелогичный
 сценарий можно опознать, изучив задержку в очереди на выполнение.
 
-## tlbstat
+## PMC
+### tlbstat
 ```
 # tlbstat -C0 1
 K_CYCLES K_INSTR IPC DTLB_WALKS ITLB_WALKS K_DTLBCYC K_ITLBCYC DTLB% ITLB%
