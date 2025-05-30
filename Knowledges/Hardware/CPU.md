@@ -107,7 +107,7 @@ The Linux scheduler is designed to be cache-aware :
 
 A translation lookaside buffer (TLB) is a memory cache that stores the recent translations of virtual memory to physical memory. It is used to reduce the time taken to access a user memory location.[1] It can be called an address-translation cache. It is a part of the chip's memory-management unit (MMU). A TLB may reside between the CPU and the CPU cache, between CPU cache and the main memory or between the different levels of the multi-level cache. 
 
-![Page_table_actions svg](https://github.com/user-attachments/assets/7fd3752a-b11a-4183-87f7-aa166603e123)
+![image](https://github.com/user-attachments/assets/aaa853d4-400e-4c7e-a168-9959d0afefcc)
 
 ## Page faults
 Page fault is an exception that the memory management unit (MMU) raises when a process accesses a memory page without proper preparations. Accessing the page requires a mapping to be added to the process's virtual address space. Furthermore, the actual page contents may need to be loaded from a back-up, e.g. a disk. The MMU detects the page fault, but the operating system's kernel handles the exception by making the required page accessible in the physical memory or denying an illegal memory access. 
