@@ -378,3 +378,72 @@ __GI___write
 - iperf (29136)
 2673
 ```
+Реализация
+```
+bpftrace -e 'profile:hz:49 /pid/ { @samples[ustack, kstack, comm] = count(); }'
+```
+## offcputime
+Подсчитывает время, потраченное потоками в ожидании на блокировках и в очереди на выполнение,
+и отображающий соответствующие трассировки стека. Этот инструмент помогает
+понять, почему потоки не выполнялись на процессоре. offcputime является аналогом profile. Вместе они показывают все время, потраченное потоками в системе:
+
+profile показывает время выполнения на процессоре, а offcputime — время
+ожидания вне процессора.
+```
+# offcputime 5
+Tracing off-CPU time (us) of all threads by user + kernel stack for 5 secs.
+[...]
+finish_task_switch
+schedule
+schedule_timeout
+wait_woken
+sk_stream_wait_memory
+tcp_sendmsg_locked
+tcp_sendmsg
+inet_sendmsg
+sock_sendmsg
+sock_write_iter
+new_sync_write
+__vfs_write
+vfs_write
+SyS_write
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+__write
+[unknown]
+- iperf (14657)
+5625
+
+[...]
+finish_task_switch
+schedule
+schedule_timeout
+wait_woken
+sk_wait_data
+tcp_recvmsg
+inet_recvmsg
+sock_recvmsg
+SYSC_recvfrom
+sys_recvfrom
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+recv
+- iperf (14659)
+1021497
+
+[...]
+finish_task_switch
+schedule
+schedule_hrtimeout_range_clock
+schedule_hrtimeout_range
+poll_schedule_timeout
+do_select
+core_sys_select
+sys_select
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+__libc_select
+[unknown]
+- offcputime (14667)
+5004039
+```
