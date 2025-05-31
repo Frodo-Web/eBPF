@@ -100,3 +100,34 @@ Linux 4.18.0-virtual (...) 01/21/2019 _x86_64_ (36 CPU)
 11:06:26 PM 72      1030     65.90   41.52   34.75    0
 [...]
 ```
+## Измерение задержки очереди на выполнение
+sched_wakeup_new - то же что и sched_wakeup, но вызывается при появлении нового потока, который будет выполняться первый раз <br>
+sched_wakeup - вызывается для переключения состояния потока из состояний TASK_UNINTERRUPTABLE и TASK_INTERAPTABLE в состояние TASK_RUNNING - задача готова к выполнянию <br>
+sched_switch - выполняется два раза, для прерывания предыдущей задачи и добавления ожидающей в состоянии TASK_RUNNING. <br>
+Тут нужно понимать, если выполение потока прерывается из за исчерпания квоты, статус TASK_RUNNING остаётся, вызов sched_wakeup по идее и не нужен т.к. задача сразу попадает в очередь на выполнение, поэтому в коде есть if конструкция.
+
+```
+#!/usr/local/bin/bpftrace
+#include <linux/sched.h>
+
+tracepoint:sched:sched_wakeup,
+tracepoint:sched:sched_wakeup_new
+{
+@qtime[args->pid] = nsecs;
+}
+tracepoint:sched:sched_switch
+{
+if (args->prev_state == TASK_RUNNING) {
+@qtime[args->prev_pid] = nsecs;
+}
+$ns = @qtime[args->next_pid];
+if ($ns) {
+@usecs = hist((nsecs - $ns) / 1000);
+}
+delete(@qtime[args->next_pid]);
+}
+END
+{
+clear(@qtime);
+}
+```
