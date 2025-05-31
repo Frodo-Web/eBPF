@@ -131,3 +131,39 @@ Linux активно заимствует свободную память для
 Ядро Linux можно настроить так, чтобы оно предпочитало освобождать память,
 занятую кэшем файловой системы, или освобождало память путем вытеснения
 (vm.swappiness).
+
+## Источники событий
+![image](https://github.com/user-attachments/assets/e07979ac-8798-44d0-be3a-2f2a285b9f5a)
+Зонды USDT, доступные в libc:
+```
+# bpftrace -l usdt:/lib/x86_64-linux-gnu/libc-2.27.so
+[...]
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_arena_max
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_arena_test
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_tunable_tcache_max_bytes
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_tunable_tcache_count
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_tunable_tcache_unsorted_limit
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_trim_threshold
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_top_pad
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_mmap_threshold
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_mmap_max
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_perturb
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_heap_new
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_sbrk_less
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_arena_reuse
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_arena_reuse_wait
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_arena_new
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_arena_reuse_free_list
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_arena_retry
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_heap_free
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_heap_less
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_heap_more
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_sbrk_more
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_free_dyn_thresholds
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_malloc_retry
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_memalign_retry
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_realloc_retry
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_calloc_retry
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt
+usdt:/lib/x86_64-linux-gnu/libc-2.27.so:libc:memory_mallopt_mxfast
+```
