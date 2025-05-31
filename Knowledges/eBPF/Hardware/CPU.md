@@ -170,3 +170,211 @@ runqlen : count distribution
 0 : 126 |****************************************|
 [...]
 ```
+###  Реализация runqlen
+```
+#!/usr/local/bin/bpftrace
+#include <linux/sched.h>
+
+struct cfs_rq_partial {
+struct load_weight load;
+unsigned long runnable_weight;
+unsigned int nr_running;
+};
+
+profile:hz:99
+{
+$task = (struct task_struct *)curtask;
+$my_q = (struct cfs_rq_partial *)$task->se.cfs_rq;
+$len = $my_q->nr_running;
+$len = $len > 0 ? $len - 1 : 0; // учесть текущую выполняемую задачу
+@runqlen = lhist($len, 0, 100, 1);
+}
+```
+## runqslower (задержка больше чем..)
+```
+# runqslower
+Tracing run queue latency higher than 10000 us
+TIME COMM PID LAT(us)
+17:42:49 python3 4590 16345
+17:42:50 pool-25-thread- 4683 50001
+17:42:53 ForkJoinPool.co 5898 11935
+17:42:56 python3 4590 10191
+17:42:56 ForkJoinPool.co 5912 13738
+17:42:56 ForkJoinPool.co 5908 11434
+17:42:57 ForkJoinPool.co 5890 11436
+17:43:00 ForkJoinPool.co 5477 10502
+17:43:01 grpc-default-wo 5794 11637
+17:43:02 tomcat-exec-296 6373 12083
+[...]
+```
+## cpudist (распределение времени выполнения потоков на CPU после возобновления.
+Пример когда потоки завершаются быстро за микросекунды
+```
+# cpudist 10 1
+Tracing on-CPU time... Hit Ctrl-C to end.
+usecs : count distribution
+0 -> 1 : 103865 |*************************** |
+2 -> 3 : 91142 |************************ |
+4 -> 7 : 134188 |*********************************** |
+8 -> 15 : 149862 |****************************************|
+16 -> 31 : 122285 |******************************** |
+32 -> 63 : 71912 |******************* |
+64 -> 127 : 27103 |******* |
+128 -> 255 : 4835 |* |
+256 -> 511 : 692 | |
+512 -> 1023 : 320 | |
+1024 -> 2047 : 328 | |
+2048 -> 4095 : 412 | |
+4096 -> 8191 : 356 | |
+8192 -> 16383 : 69 | |
+16384 -> 32767 : 42 | |
+32768 -> 65535 : 30 | |
+65536 -> 131071 : 22 | |
+131072 -> 262143 : 20 | |
+262144 -> 524287 : 4 | |
+```
+Распределение в миллисекундах, рабочая нагрузка с количеством потоков больше cpu, видна четкая мода от 8 до 15 (не меньше не больше), скорее всего потоки исчерпывают выделенные им кванты времени, после чего планировщик переключает контекст.
+```
+# cpudist -m
+Tracing on-CPU time... Hit Ctrl-C to end.
+^C
+msecs : count distribution
+0 -> 1 : 521 |****************************************|
+2 -> 3 : 60 |**** |
+4 -> 7 : 272 |******************** |
+8 -> 15 : 308 |*********************** |
+16 -> 31 : 66 |***** |
+32 -> 63 : 14 |* |
+```
+## cpufreq
+Выборка значений частоты процессора
+
+Работает только при настройке регулятора частоты CPU на определенный режим, например
+энергосбережения (powersave), и может использоваться для определения тактовой
+частоты, с которой выполняются приложения. 
+```
+# cpufreq.bt
+Sampling CPU freq system-wide & by process. Ctrl-C to end.
+^C
+[...]
+@process_mhz[snmpd]:
+[1200, 1400) 1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+@process_mhz[python3]:
+[1600, 1800) 1 |@ |
+[1800, 2000) 0 | |
+[2000, 2200) 0 | |
+[2200, 2400) 0 | |
+[2400, 2600) 0 | |
+[2600, 2800) 2 |@@@ |
+[2800, 3000) 0 | |
+[3000, 3200) 29 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+@process_mhz[java]:
+[1200, 1400) 216 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1400, 1600) 23 |@@@@@ |
+[1600, 1800) 18 |@@@@ |
+[1800, 2000) 16 |@@@ |
+[2000, 2200) 12 |@@ |
+[2200, 2400) 0 | |
+[2400, 2600) 4 | |
+[2600, 2800) 2 | |
+[2800, 3000) 1 | |
+[3000, 3200) 18 |@@@@ |
+@system_mhz:
+[1200, 1400) 22041 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1400, 1600) 903 |@@ |
+[1600, 1800) 474 |@ |
+[1800, 2000) 368 | |
+[2000, 2200) 30 | |
+[2200, 2400) 3 | |
+[2400, 2600) 21 | |
+[2600, 2800) 33 | |
+[2800, 3000) 15 | |
+[3000, 3200) 270 | |
+[...]
+```
+Реализация
+```
+tracepoint:power:cpu_frequency
+{
+@curfreq[cpu] = args->state;
+}
+profile:hz:100
+/@curfreq[cpu]/
+{
+@system_mhz = lhist(@curfreq[cpu] / 1000, 0, 5000, 200);
+if (pid) {
+@process_mhz[comm] = lhist(@curfreq[cpu] / 1000, 0, 5000, 200);
+}
+}
+END
+{
+clear(@curfreq);
+}
+```
+## profile
+Выбирает трассировки стека с заданным интервалом и сообщает частоту каждой из них.
+
+Для понимания особенностей потребления CPU, так как он обобщает практически все пути кода, характеризующиеся высоким потреблением
+вычислительных ресурсов.
+```
+# profile
+Sampling at 49 Hertz of all threads by user + kernel stack... Hit Ctrl-C to end.
+^C
+sk_stream_alloc_skb
+sk_stream_alloc_skb
+tcp_sendmsg_locked
+tcp_sendmsg
+sock_sendmsg
+sock_write_iter
+__vfs_write
+vfs_write
+ksys_write
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+__GI___write
+[unknown]
+- iperf (29136)
+1
+
+[...]
+__free_pages_ok
+__free_pages_ok
+skb_release_data
+__kfree_skb
+tcp_ack
+tcp_rcv_established
+tcp_v4_do_rcv
+__release_sock
+release_sock
+tcp_sendmsg
+sock_sendmsg
+sock_write_iter
+__vfs_write
+vfs_write
+ksys_write
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+__GI___write
+[unknown]
+- iperf (29136)
+1889
+
+get_page_from_freelist
+get_page_from_freelist
+__alloc_pages_nodemask
+skb_page_frag_refill
+sk_page_frag_refill
+tcp_sendmsg_locked
+tcp_sendmsg
+sock_sendmsg
+sock_write_iter
+__vfs_write
+vfs_write
+ksys_write
+do_syscall_64
+entry_SYSCALL_64_after_hwframe
+__GI___write
+[unknown]
+- iperf (29136)
+2673
+```
