@@ -68,7 +68,7 @@ K_CYCLES K_INSTR IPC DTLB_WALKS ITLB_WALKS K_DTLBCYC K_ITLBCYC DTLB% ITLB%
 ## BPF tools
 ![image](https://github.com/user-attachments/assets/bbfc8c8d-0eaf-42e4-aaf8-617ebb3182ba)
 
-## Очередь выполнения
+## Очередь на выполнение
 На 36 ядерной системе запущено 72 потока, при этом 0 idle, в очереди на выполнение 72 процесса (включая выполняющиеся)
 ```
 # runqlat 10 1
@@ -133,4 +133,18 @@ END
 {
 clear(@qtime);
 }
+```
+## Длина очереди на выполнение
+runqlen выбирает данные по времени,с частотой 99 Гц, тогда как runqlat трассирует события планировщика.
+```
+# runqlen 10 1
+Sampling run queue length... Hit Ctrl-C to end.
+runqlen : count distribution
+0 : 47284 |****************************************|
+1 : 211 | |
+2 : 28 | |
+3 : 6 | |
+4 : 4 | |
+5 : 1 | |
+6 : 1 | |
 ```
