@@ -447,3 +447,27 @@ __libc_select
 - offcputime (14667)
 5004039
 ```
+Реализация
+```
+#!/usr/local/bin/bpftrace
+#include <linux/sched.h>
+
+kprobe:finish_task_switch
+{
+// записать время простоя предыдущего потока
+$prev = (struct task_struct *)arg0;
+if ($1 == 0 || $prev->tgid == $1) {
+@start[$prev->pid] = nsecs;
+}
+// получить время запуска текущего потока
+$last = @start[tid];
+if ($last != 0) {
+@[kstack, ustack, comm] = sum(nsecs - $last);
+delete(@start[tid]);
+}
+}
+END
+{
+clear(@start);
+}
+```
