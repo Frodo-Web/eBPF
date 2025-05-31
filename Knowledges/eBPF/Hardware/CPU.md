@@ -619,3 +619,89 @@ Attaching 1 probe...
 @:
 [11, 12) 123 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 ```
+## funccount
+В своей работе funccount использует метод динамической трассировки функций:
+зонды kprobes для функций ядра и uprobes для функций в пространстве пользо-
+вателя
+```
+# funccount 'tcp_*'
+Tracing 316 functions for "tcp_*"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+[...]
+tcp_stream_memory_free 368048
+tcp_established_options 381234
+tcp_v4_md5_lookup 402945
+tcp_gro_receive 484571
+tcp_md5_do_lookup 510322
+Detaching...
+
+# funccount -i 1 get_page_from_freelist
+..
+Tracing 1 functions for "get_page_from_freelist"... Hit Ctrl-C to end.
+
+FUNC COUNT
+get_page_from_freelist 586452
+
+FUNC COUNT
+get_page_from_freelist 586241
+[...]
+```
+Реализация
+```
+# bpftrace -e 'k:tcp_* { @[probe] = count(); }'
+Attaching 320 probes...
+[...]
+@[kprobe:tcp_release_cb]: 153001
+@[kprobe:tcp_v4_md5_lookup]: 154896
+@[kprobe:tcp_gro_receive]: 177187
+```
+## softirqs
+Показывает время затраченное на обработку программных прерываний
+
+В своей работе softirqs использует точки трассировки irq:softirq_enter и irq:softirq_
+exit.
+```
+# softirqs 10 1
+..
+Tracing soft irq event time... Hit Ctrl-C to end.
+SOFTIRQ TOTAL_usecs
+net_tx 633
+tasklet 30939
+rcu 143859
+sched 185873
+timer 389144
+net_rx 1358268
+```
+Согласно этим результатам, наибольшее время было потрачено на обработку прерывания net_rx, всего 1358 миллисекунд. Это довольно много — 3% процессорного
+времени в 48-процессорной системе.
+
+Реализация
+```
+# bpftrace -e 'tracepoint:irq:softirq_entry { @[args->vec] = count(); }'
+Attaching 1 probe...
+^C
+@[3]: 11
+@[6]: 45
+@[0]: 395
+@[9]: 405
+@[1]: 524
+@[7]: 561
+```
+## hardirqs
+Показывает время затраченное на обработку аппаратных прерываний
+```
+# hardirqs 10 1
+Tracing hard irq event time... Hit Ctrl-C to end.
+HARDIRQ                    TOTAL_usecs
+ena-mgmnt@pci:0000:00:05.0 43
+nvme0q0                    46
+eth0-Tx-Rx-7               47424
+eth0-Tx-Rx-6               48199
+eth0-Tx-Rx-5               48524
+eth0-Tx-Rx-2               49482
+eth0-Tx-Rx-3               49750
+eth0-Tx-Rx-0               51084
+eth0-Tx-Rx-4               51106
+eth0-Tx-Rx-1               52649
+```
