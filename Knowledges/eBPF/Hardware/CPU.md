@@ -690,6 +690,10 @@ Attaching 1 probe...
 ```
 ## hardirqs
 Показывает время затраченное на обработку аппаратных прерываний
+
+В своей работе этот инструмент использует прием динамической трассировки
+функции ядра handle_irq_event_percpu(), но будущие версии будут применять
+точки трассировки irq:irq_handler_entry и irq:irq_handler_exit.
 ```
 # hardirqs 10 1
 Tracing hard irq event time... Hit Ctrl-C to end.
@@ -704,4 +708,188 @@ eth0-Tx-Rx-3               49750
 eth0-Tx-Rx-0               51084
 eth0-Tx-Rx-4               51106
 eth0-Tx-Rx-1               52649
+```
+Параметр -d можно использовать для изучения распределения и выявления задержек, возникающих при обработке прерываний.
+## smpcalls
+Отслеживание и суммирование времени в функциях вызовов SMP (также известных как перекрестные вызовы). Поддержка таких вызовов позволяет одному процессору запускать функции на любых других процессорах и может приводить к сильному оверхеду в больших многопроцессорных
+системах. Вот пример трассировки в системе с 36 процессорами:
+```
+# smpcalls.bt
+Attaching 8 probes...
+Tracing SMP calls. Hit Ctrl-C to stop.
+^C
+@time_ns[do_flush_tlb_all]:
+[32K, 64K) 1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64K, 128K) 1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+@time_ns[remote_function]:
+[4K, 8K) 1 |@@@@@@@@@@@@@@@@@@@@@@@@@@ |
+[8K, 16K) 1 |@@@@@@@@@@@@@@@@@@@@@@@@@@ |
+[16K, 32K) 0 | |
+[32K, 64K) 2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+@time_ns[do_sync_core]:
+[32K, 64K) 15 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64K, 128K) 9 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ |
+@time_ns[native_smp_send_reschedule]:
+[2K, 4K) 7 |@@@@@@@@@@@@@@@@@@@ |
+[4K, 8K) 3 |@@@@@@@@ |
+[8K, 16K) 19 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[16K, 32K) 3 |@@@@@@@@ |
+@time_ns[aperfmperf_snapshot_khz]:
+[1K, 2K) 5 |@ |
+[2K, 4K) 12 |@@@ |
+[4K, 8K) 12 |@@@ |
+[8K, 16K) 6 |@ |
+[16K, 32K) 1 | |
+[32K, 64K) 196 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64K, 128K) 20 |@@@@@ |
+```
+Реализация
+```
+kprobe:smp_call_function_single,
+kprobe:smp_call_function_many
+{
+@ts[tid] = nsecs;
+@func[tid] = arg1;
+}
+kretprobe:smp_call_function_single,
+kretprobe:smp_call_function_many
+/@ts[tid]/
+{
+@time_ns[ksym(@func[tid])] = hist(nsecs - @ts[tid]);
+delete(@ts[tid]);
+delete(@func[tid]);
+}
+kprobe:native_smp_send_reschedule
+{
+@ts[tid] = nsecs;
+@func[tid] = reg("ip");
+}
+kretprobe:native_smp_send_reschedule
+/@ts[tid]/
+{
+@time_ns[ksym(@func[tid])] = hist(nsecs - @ts[tid]);
+delete(@ts[tid]);
+delete(@func[tid]);
+}
+END
+{
+clear(@ts);
+clear(@func);
+}
+```
+Многие из SMP-вызовов можно трассировать с помощью зондов kprobes для
+функций ядра smp_call_function_single() и smp_call_function_many(). Во втором
+аргументе этим функциям передается указатель на функцию для запуска на удаленном CPU, который в bpftrace доступен как arg1
+
+Ключ гистограммы @time_ns можно изменить и включить в него трассировку стека
+ядра и имя процесса:
+@time_ns[comm, kstack, ksym(@func[tid])] = hist(nsecs - @ts[tid]);
+```
+@time_ns[snmp-pass,
+smp_call_function_single+1
+aperfmperf_snapshot_cpu+90
+arch_freq_prepare_all+61
+cpuinfo_open+14
+proc_reg_open+111
+do_dentry_open+484
+path_openat+692
+do_filp_open+153
+do_sys_open+294
+do_syscall_64+85
+entry_SYSCALL_64_after_hwframe+68
+, aperfmperf_snapshot_khz]:
+[2K, 4K) 2 |@@ |
+[4K, 8K) 0 | |
+[8K, 16K) 1 |@ |
+[16K, 32K) 1 |@ |
+[32K, 64K) 51 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64K, 128K) 17 |@@@@@@@@@@@@@@@@@
+```
+В этом выводе видно, что процесс snmp-pass, агент мониторинга, выполнил систем-
+ный вызов open(), который заканчивается вызовом cpuinfo_open() и дорогостоящим
+перекрестным вызовом
+```
+# opensnoop.py -Tn snmp-pass
+TIME(s) PID COMM FD ERR PATH
+0.000000000 2440 snmp-pass 4 0 /proc/cpuinfo
+0.000841000 2440 snmp-pass 4 0 /proc/stat
+1.022128000 2440 snmp-pass 4 0 /proc/cpuinfo
+1.024696000 2440 snmp-pass 4 0 /proc/stat
+2.046133000 2440 snmp-pass 4 0 /proc/cpuinfo
+2.049020000 2440 snmp-pass 4 0 /proc/stat
+3.070135000 2440 snmp-pass 4 0 /proc/cpuinfo
+3.072869000 2440 snmp-pass 4 0 /proc/stat
+[...]
+```
+Этот вывод показывает, что snmp-pass читает файл /proc/cpuinfo каждую секунду!
+Большинство деталей в этом файле не меняется, кроме поля «CPU MHz».
+Исследование исходного кода показало, что это ПО читает /proc/cpuinfo только
+для того, чтобы узнать количество процессоров. Поле «CPU MHz» им вообще не
+анализируется. Это пример выполнения ненужной работы, устранение которой
+должно обеспечить небольшой, но легкий выигрыш.
+На процессорах Intel эти SMP-вызовы реализованы как вызовы x2APIC IPI (Inter-
+Processor Interrupt — межпроцессорные прерывания), включая x2apic_send_IPI().
+## llcstat
+Использует счетчики PMC для отображения частоты промахов и попаданий в кэш последнего уровня (Last-Level Cache, LLC) по процессам.
+```
+# llcstat
+Running for 10 seconds or hit Ctrl-C to end.
+PID NAME CPU REFERENCE MISS HIT%
+0 swapper/15 15 1007300 1000 99.90%
+4435 java 18 22000 200 99.09%
+4116 java 7 11000 100 99.09%
+4441 java 38 32200 300 99.07%
+17387 java 17 10800 100 99.07%
+4113 java 17 10500 100 99.05%
+[...]
+```
+процесс может случайно переполнить счетчик промахов раньше, чем счетчик ссылок,
+что не учитывается инструментом (потому что промахи — это подмножество ссылок).
+## Однострочники
+```
+Трассирует запуск новых процессов и их аргументы:
+bpftrace -e 'tracepoint:syscalls:sys_enter_execve { join(args->argv); }'
+
+Сообщает, кто и что выполняет:
+bpftrace -e 'tracepoint:syscalls:sys_enter_execve { printf("%s -> %s\n", comm,
+str(args->filename)); }'
+
+Выводит число системных вызовов, выполненных каждой программой:
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
+
+Выводит число системных вызовов, выполненных каждым процессом:
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[pid, comm] = count(); }'
+
+Выводит число обращений к каждому системному вызову, используя его зонд:
+bpftrace -e 'tracepoint:syscalls:sys_enter_* { @[probe] = count(); }'
+
+Выводит число обращений к каждому системному вызову, используя имя функции:
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter {
+@[sym(*(kaddr("sys_call_table") + args->id * 8))] = count(); }'
+
+Выбирает имена работающих процессов с частотой 99 Гц:
+bpftrace -e 'profile:hz:99 { @[comm] = count(); }'
+Выбирает трассировки стека в пространстве пользователя с частотой 49 Гц для
+PID 189:
+bpftrace -e 'profile:hz:49 /pid == 189/ { @[ustack] = count(); }'
+
+Выбирает все трассировки стека и имена процессов:
+bpftrace -e 'profile:hz:49 { @[ustack, stack, comm] = count(); }'
+
+Выбирает работающие процессоры с частотой 99 Гц и выводит собранную инфор-
+мацию в виде линейной гистограммы:
+bpftrace -e 'profile:hz:99 { @cpu = lhist(cpu, 0, 256, 1); }'
+
+Подсчитывает число вызовов функций ядра с именами, начинающимися на «vfs_»:
+bpftrace -e 'kprobe:vfs_* { @[func] = count(); }'
+
+Подсчитывает SMP-вызовы по именам и трассировкам стека ядра:
+bpftrace -e 'kprobe:smp_call* { @[probe, kstack(5)] = count(); }'
+
+Подсчитывает вызовы Intel x2APIC по именам и трассировкам стека ядра:
+bpftrace -e 'kprobe:x2apic_send_IPI* { @[probe, kstack(5)] = count(); }'
+
+Трассирует запуск новых потоков вызовом pthread_create():
+bpftrace -e 'u:/lib/x86_64-linux-gnu/libpthread-2.27.so:pthread_create {
+printf("%s by %s (%d)\n", probe, comm, pid); }'
 ```
