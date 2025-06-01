@@ -1,5 +1,5 @@
 # CPU perf
-TLB misses cause a walk
+### TLB misses cause a walk
 ```
 openssl speed -multi 2
 
@@ -29,7 +29,7 @@ perf stat -e dTLB-loads,dTLB-stores,iTLB-loads,dtlb_load_misses.miss_causes_a_wa
 
        5.002948220 seconds time elapsed
 ```
-L1 Cache misses and migrations
+### L1 Cache misses and migrations
 ```
 openssl speed -multi 6
 
@@ -61,7 +61,7 @@ perf stat -e cpu-cycles,cpu-migrations,L1-dcache-loads,L1-dcache-load-misses,L1-
 
        5.003335702 seconds time elapsed
 ```
-Page faults
+### Page faults
 ```
 openssl speed -multi 4
 
@@ -98,4 +98,40 @@ perf stat -e major-faults,minor-faults,page-faults -a sleep 10
            1833069      page-faults
 
       10.003890280 seconds time elapsed
+```
+### Branch instructions, branch misses
+```
+perf stat -e branch-instructions,branch-misses,instructions -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+           7420378      branch-instructions
+            386706      branch-misses                    #    5.21% of all branches
+          32208453      instructions
+
+      10.001062681 seconds time elapsed
+
+perf stat -e branch-instructions,branch-misses,instructions -a sleep 10
+
+openssl speed -multi 4
+
+ Performance counter stats for 'system wide':
+
+        8172979753      branch-instructions
+           5620132      branch-misses                    #    0.07% of all branches
+      252741618034      instructions
+
+      10.001855385 seconds time elapsed
+
+stress-ng --cpu 4 --vm 2 --fork 4 --switch 4 --timeout 1m
+
+perf stat -e branch-instructions,branch-misses,instructions -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+       28195651327      branch-instructions
+         276974391      branch-misses                    #    0.98% of all branches
+      170019755390      instructions
+
+      10.004069634 seconds time elapsed
 ```
