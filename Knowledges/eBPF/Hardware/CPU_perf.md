@@ -135,3 +135,34 @@ perf stat -e branch-instructions,branch-misses,instructions -a sleep 10
 
       10.004069634 seconds time elapsed
 ```
+### Cache references and misses
+```
+perf stat -e cache-references,cache-misses -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+           2118696      cache-references
+             79318      cache-misses                     #    3.74% of all cache refs
+
+      10.001057746 seconds time elapsed
+
+openssl speed -multi 4
+
+perf stat -e cache-references,cache-misses -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+            814845      cache-references
+             60696      cache-misses                     #    7.45% of all cache refs
+
+stress-ng --cpu 4 --vm 2 --fork 4 --switch 4 --timeout 1m
+
+perf stat -e cache-references,cache-misses -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+        1238234420      cache-references
+         104724132      cache-misses                     #    8.46% of all cache refs
+
+      10.004109657 seconds time elapsed
+```
