@@ -166,3 +166,12 @@ perf stat -e cache-references,cache-misses -a sleep 10
 
       10.004109657 seconds time elapsed
 ```
+## CPU cycles and bus cycles
+```
+perf stat -e cpu-cycles,bus-cycles -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+      124246741667      cpu-cycles
+        4007959236      bus-cycles
+```
