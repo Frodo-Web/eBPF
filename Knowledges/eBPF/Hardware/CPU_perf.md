@@ -61,3 +61,41 @@ perf stat -e cpu-cycles,cpu-migrations,L1-dcache-loads,L1-dcache-load-misses,L1-
 
        5.003335702 seconds time elapsed
 ```
+Page faults
+```
+openssl speed -multi 4
+
+perf stat -e major-faults,minor-faults,page-faults -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+                 0      major-faults
+                80      minor-faults
+                80      page-faults
+
+      10.002624583 seconds time elapsed
+
+openssl speed -multi 64
+
+perf stat -e major-faults,minor-faults,page-faults -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+                 0      major-faults
+               209      minor-faults
+               209      page-faults
+
+      10.032003481 seconds time elapsed
+
+stress-ng --cpu 4 --vm 2 --fork 4 --switch 4 --timeout 1m
+
+perf stat -e major-faults,minor-faults,page-faults -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+                 0      major-faults
+           1833069      minor-faults
+           1833069      page-faults
+
+      10.003890280 seconds time elapsed
+```
