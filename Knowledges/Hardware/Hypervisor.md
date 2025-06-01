@@ -72,3 +72,32 @@ Total Samples:2421, Total events handled time:1946040.48us.
 тистику по каждой причине. Наиболее продолжительные выходы в этом примере
 были обусловлены операцией HLT (остановка), выполняя которую виртуальные
 процессоры переходят в состояние ожидания.
+
+## ИНСТРУМЕНТЫ BPF ДЛЯ АНАЛИЗА НА УРОВНЕ ГОСТЕВОЙ ОС
+### Гипервызовы Xen
+Если гостевая система использует паравиртуализацию и выполняет гипервызовы,
+их можно трассировать с помощью funccount(8), trace(8), argdist(8) и stackcount(8).
+Более того, для Xen есть даже точки трассировки.
+### Xen PV
+```
+# dmesg | grep Hypervisor
+[ 0.000000] Hypervisor detected: Xen PV
+```
+```
+# funccount 't:xen:*'
+Tracing 30 functions for "t:xen:*"... Hit Ctrl-C to end.
+^C
+FUNC COUNT
+xen:xen_mmu_flush_tlb_one_user 70
+xen:xen_mmu_set_pte 84
+xen:xen_mmu_set_pte_at 95
+xen:xen_mc_callback 97
+xen:xen_mc_extend_args 194
+xen:xen_mmu_write_cr3 194
+xen:xen_mc_entry_alloc 904
+xen:xen_mc_entry 924
+xen:xen_mc_flush 1175
+xen:xen_mc_issue 1378
+xen:xen_mc_batch 1392
+Detaching...
+```
