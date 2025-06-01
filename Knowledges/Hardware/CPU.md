@@ -162,6 +162,12 @@ Branch mispredictions cause performance issues because:
    - All those speculative instructions must be discarded.
    - The correct instructions must then be fetched and executed.
    - This wastes time and CPU resources (pipeline flushes, wasted computation).
+
+To reduce branch misses:
+ - Replace unpredictable branches with branchless code (e.g., using bitwise operations or conditional moves).
+ - Avoid deeply nested or complex conditionals when possible.
+ - Use data structures with predictable access patterns.
+
 ## Доступ к памяти
 - Неоднородный доступ к памяти (non-uniform memory access, NUMA) - архитектура организации оперативной памяти, используемая в мультипроцессорных системах, в которой процессор имеет быстрый доступ к локальной памяти через свой контроллер, а также более медленный канал до памяти, подключённой к контроллерам (слотам) других процессоров, реализуемый через шину обмена данными.
 
