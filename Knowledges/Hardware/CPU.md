@@ -146,6 +146,22 @@ If a page fault occurs for a reference to an address that is not part of the vir
 Kernel Page Table Isolation, KPTI устраняет уязвимость Meltdown
 ![image](https://github.com/user-attachments/assets/f281afe7-12c1-42e1-a93a-2626487ab279)
 
+## Branches, branch misses
+Branch instructions are those that change the flow of execution, such as:
+ - Conditional branches (if, else, loops)
+ - Function calls
+ - Returns
+ - Jumps
+
+Branch misses are incorrect predictions made by the CPU. <br>
+In modern CPUs, branch prediction is used to guess the direction of a branch (like an if statement or loop) before it's actually known.
+
+Branch mispredictions cause performance issues because:
+ - The CPU speculatively executes instructions based on its predicted path.
+ - If the prediction was wrong:
+   - All those speculative instructions must be discarded.
+   - The correct instructions must then be fetched and executed.
+   - This wastes time and CPU resources (pipeline flushes, wasted computation).
 ## Доступ к памяти
 - Неоднородный доступ к памяти (non-uniform memory access, NUMA) - архитектура организации оперативной памяти, используемая в мультипроцессорных системах, в которой процессор имеет быстрый доступ к локальной памяти через свой контроллер, а также более медленный канал до памяти, подключённой к контроллерам (слотам) других процессоров, реализуемый через шину обмена данными.
 
