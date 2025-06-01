@@ -1,3 +1,20 @@
+## Buddy Allocator
+The buddy allocator groups free memory into blocks of size 2^n * PAGE_SIZE. For example:
+ - Order 0 = 1 page (4KB)
+ - Order 1 = 2 pages (8KB)
+ - Order 2 = 4 pages (16KB)
+ - ...
+ - Order 10 = 1024 pages (4MB)
+```
+cat /proc/buddyinfo
+
+Node 0, zone      DMA      1      1      1      1      1      1      1      1      0      2      2
+Node 0, zone    DMA32      8      4      8      5      6      9      6      5      6     10    768
+Node 0, zone   Normal   5880   2777   2132   1250    959    701    406    313    167    159   2423
+```
+For normal zone:
+ - High numbers for higher orders (like order 10) in the Normal zone → means there are plenty of large contiguous memory blocks available.
+ - This suggests low memory fragmentation and good availability for large allocations like huge pages.
 ## SLAB allocator
 SLAB allocator:
 - Purpose: Optimizes memory allocation for small, frequently used kernel objects (e.g., process descriptors, network sockets, filesystem metadata).
