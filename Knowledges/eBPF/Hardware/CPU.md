@@ -893,3 +893,88 @@ bpftrace -e 'kprobe:x2apic_send_IPI* { @[probe, kstack(5)] = count(); }'
 bpftrace -e 'u:/lib/x86_64-linux-gnu/libpthread-2.27.so:pthread_create {
 printf("%s by %s (%d)\n", probe, comm, pid); }'
 ```
+## EEVDF Scheduler
+```
+bpftrace -e 'kprobe:pick_eevdf { @samples[ustack, kstack, comm] = count(); }'
+..
+@samples[
+,
+    pick_eevdf+1
+    pick_task_fair+78
+    pick_next_task_fair+68
+    __pick_next_task+62
+    __schedule+263
+    schedule_idle+31
+    do_idle+166
+    cpu_startup_entry+37
+    start_secondary+280
+    common_startup_64+318
+, swapper/3]: 1032
+
+@samples[
+,
+    pick_eevdf+1
+    pick_task_fair+78
+    pick_next_task_fair+68
+    __pick_next_task+62
+    __schedule+263
+    schedule+38
+    schedule_timeout+115
+    kcompactd+563
+    kthread+253
+    ret_from_fork+48
+    ret_from_fork_asm+26
+, kcompactd0]: 8
+
+@samples[
+,
+    pick_eevdf+1
+    pick_task_fair+78
+    pick_next_task_fair+68
+    __pick_next_task+62
+    __schedule+263
+    schedule+38
+    worker_thread+392
+    kthread+253
+    ret_from_fork+48
+    ret_from_fork_asm+26
+, kworker/2:0]: 7
+
+@samples[
+    runtime.futex.abi0+35
+    runtime.notesleep+135
+    runtime.stoplockedm+115
+    runtime.schedule+58
+    runtime.park_m+645
+    runtime.mcall+78
+    runtime.gopark+206
+    runtime.chansend+933
+    runtime.chansend1+23
+    github.com/aquasecurity/libbpfgo.ringbufferCallback+156
+    _cgoexp_3e8df8ae2b51_ringbufferCallback+37
+    runtime.cgocallbackg1+651
+    runtime.cgocallbackg+307
+    runtime.cgocallbackg.abi0+41
+    runtime.cgocallback.abi0+204
+    crosscall2+65
+    0x7f06f7fff0f0
+    ringbufferCallback+117
+    ringbuf_process_ring+95
+    0x1
+    0xd0758948d87d8948
+,
+    pick_eevdf+1
+    pick_task_fair+78
+    pick_next_task_fair+68
+    __pick_next_task+62
+    __schedule+263
+    schedule+38
+    futex_wait_queue+101
+    __futex_wait+312
+    futex_wait+100
+    do_futex+312
+    __x64_sys_futex+115
+    do_syscall_64+96
+    entry_SYSCALL_64_after_hwframe+118
+, ebpf_exporter]: 6
+```
