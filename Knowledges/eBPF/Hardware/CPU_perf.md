@@ -45,4 +45,19 @@ perf stat -e cpu-cycles,cpu-migrations,L1-dcache-loads,L1-dcache-load-misses,L1-
            1083799      L1-icache-load-misses
 
        5.003084790 seconds time elapsed
+
+stress-ng --cpu 2 --io 0 --vm 1 --vm-bytes 1G --timeout 360s
+
+perf stat -e cpu-cycles,cpu-migrations,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-icache-load-misses -a sleep 5
+
+ Performance counter stats for 'system wide':
+
+       59609629131      cpu-cycles
+              1067      cpu-migrations
+       20874259912      L1-dcache-loads
+        1177849418      L1-dcache-load-misses            #    5.64% of all L1-dcache accesses
+       12484812923      L1-dcache-stores
+         292129082      L1-icache-load-misses
+
+       5.003335702 seconds time elapsed
 ```
