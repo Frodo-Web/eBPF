@@ -1,4 +1,21 @@
 # CPU perf
+### Standart
+```
+perf stat -a sleep 10
+
+ Performance counter stats for 'system wide':
+
+          40004.87 msec cpu-clock                        #    4.000 CPUs utilized
+              1782      context-switches                 #   44.545 /sec
+                39      cpu-migrations                   #    0.975 /sec
+                83      page-faults                      #    2.075 /sec
+          83524624      cycles                           #    0.002 GHz
+          36601209      instructions                     #    0.44  insn per cycle
+           8379969      branches                         #  209.474 K/sec
+            469524      branch-misses                    #    5.60% of all branches
+
+      10.001073696 seconds time elapsed
+```
 ### TLB misses cause a walk
 ```
 openssl speed -multi 2
