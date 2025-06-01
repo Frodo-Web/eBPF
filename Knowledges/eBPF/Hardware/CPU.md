@@ -977,4 +977,25 @@ bpftrace -e 'kprobe:pick_eevdf { @samples[ustack, kstack, comm] = count(); }'
     do_syscall_64+96
     entry_SYSCALL_64_after_hwframe+118
 , ebpf_exporter]: 6
+
+@samples[
+    runtime.usleep.abi0+55
+    runtime.sysmon+165
+    runtime.mstart1+147
+    runtime.mstart0+117
+    runtime.mstart.abi0+5
+    start_thread+780
+,
+    pick_eevdf+1
+    pick_task_fair+78
+    pick_next_task_fair+68
+    __pick_next_task+62
+    __schedule+263
+    schedule+38
+    do_nanosleep+92
+    hrtimer_nanosleep+119
+    __x64_sys_nanosleep+172
+    do_syscall_64+96
+    entry_SYSCALL_64_after_hwframe+118
+, ebpf_exporter]: 6
 ```
