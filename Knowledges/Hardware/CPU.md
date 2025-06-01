@@ -168,6 +168,12 @@ To reduce branch misses:
  - Avoid deeply nested or complex conditionals when possible.
  - Use data structures with predictable access patterns.
 
+## Cache references
+Memory accesses that reference the CPU cache . This includes both hits and misses — it's just a count of how often the CPU tried to access data/instructions from the cache.
+
+## Bus cycles
+Cycles during which the CPU bus was in use . The CPU bus connects the processor to other components (like memory or I/O devices).
+High bus cycles can indicate heavy communication with external components, possibly due to cache misses or memory access bottlenecks.
 ## Доступ к памяти
 - Неоднородный доступ к памяти (non-uniform memory access, NUMA) - архитектура организации оперативной памяти, используемая в мультипроцессорных системах, в которой процессор имеет быстрый доступ к локальной памяти через свой контроллер, а также более медленный канал до памяти, подключённой к контроллерам (слотам) других процессоров, реализуемый через шину обмена данными.
 
