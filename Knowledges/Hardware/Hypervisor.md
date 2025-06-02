@@ -1,4 +1,10 @@
 # Hypervisor
+VMware vSphere - virtualization platform, с масштабировнием и рапределением аппаратных ресурсов. <br>
+vCenter Server - централизованное средство управления множеством ESXi и VM. <br>
+vCenter Client - управление средой, можно также подключаться к ESXi. <br>
+Прочие инструменты для менеджмента Storage и Networking. <br>
+ESXi - baremetal hypervisor, с ядром VMKernel (гипервизор первого типа). Здесь нет Host OS. Можно подключаться по SSH, есть BusyBox tools, но это не линупс. <br>
+Proxmox VE - Debian based, основан на полноценном лиункс ядре, и в основе виртуализация на KVM, есть возможность управлять LXC контейнерами.
 А - пример Xen, B - пример KVM
 ![image](https://github.com/user-attachments/assets/21f01258-b3fd-499e-8935-47cf78b41482)
 
